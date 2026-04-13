@@ -56,14 +56,6 @@ h2{
   color:#c084fc;
 }
 
-.mission{
-  background:#111;
-  border:1px solid #222;
-  padding:16px;
-  border-radius:12px;
-  line-height:1.5;
-}
-
 /* IDEAS */
 .idea{
   background:#111;
@@ -81,6 +73,13 @@ h2{
   background:#1f1f1f;
   border:none;
   color:white;
+  cursor:pointer;
+}
+
+/* TRENDING */
+.trending{
+  border:2px solid gold;
+  box-shadow:0 0 15px rgba(255,215,0,0.2);
 }
 
 /* INPUTS */
@@ -123,15 +122,17 @@ button{
 
 <body>
 
+<!-- HERO -->
 <div class="hero">
   <h1>Mavric for Student Leadership</h1>
   <div class="slogan">“Your Voice, My Actions.”</div>
   <div class="badge" id="timer"></div>
 </div>
 
+<!-- MISSION -->
 <div class="section">
   <h2>🎯 Mission</h2>
-  <div class="mission">
+  <div class="idea">
     I will listen to students, represent their ideas, and turn feedback into real action.
     My goal is to improve communication, fairness, and student involvement in school decisions.
     Every student deserves to be heard and taken seriously.
@@ -139,14 +140,30 @@ button{
   </div>
 </div>
 
+<!-- TRENDING IDEAS -->
+<div class="section">
+  <h2>🔥 Trending Ideas</h2>
+  <div id="trending"></div>
+</div>
+
+<!-- ALL IDEAS -->
+<div class="section">
+  <h2>💡 Student Ideas</h2>
+
+  <input id="ideaInput" placeholder="Submit your idea">
+  <button onclick="submitIdea()">Submit Idea</button>
+
+  <div id="ideas"></div>
+</div>
+
+<!-- PHOTO UPLOAD -->
 <div class="section">
   <h2>📸 Supporter Uploads</h2>
 
-  <!-- MULTI UPLOAD -->
   <input type="file" id="fileInput" multiple accept="image/*">
-  <input id="captionInput" placeholder="Caption (applies to all)">
+  <input id="captionInput" placeholder="Caption (for all images)">
   <input id="uploadPassword" placeholder="Upload password">
-  <button onclick="uploadPhotos()">Upload up to 25 images</button>
+  <button onclick="uploadPhotos()">Upload (max 25)</button>
 
   <div class="feed" id="feed"></div>
 </div>
@@ -166,8 +183,7 @@ function updateTimer(){
   const diff = end - new Date();
 
   if(diff <= 0){
-    document.getElementById("timer").innerHTML =
-      "🗳️ VOTING DAY IS HERE";
+    document.getElementById("timer").innerHTML = "🗳️ VOTING DAY IS HERE";
     return;
   }
 
@@ -179,7 +195,89 @@ function updateTimer(){
     `⏳ ${d}d ${h}h ${m}m left`;
 }
 
-/* MULTI PHOTO UPLOAD (MAX 25) */
+/* VOTING LOCK */
+function key(id){
+  return "voted_" + id;
+}
+
+function hasVoted(id){
+  return localStorage.getItem(key(id)) === "true";
+}
+
+function markVoted(id){
+  localStorage.setItem(key(id),"true");
+}
+
+/* LOAD ALL IDEAS */
+async function loadIdeas(){
+  const { data } = await client.from("ideas").select("*");
+  if(!data) return;
+
+  // sort for trending
+  const sorted = [...data].sort((a,b)=>(b.votes||0)-(a.votes||0));
+
+  // trending (top 3)
+  document.getElementById("trending").innerHTML =
+    sorted.slice(0,3).map(i => `
+      <div class="idea trending">
+        🔥 ${i.text}<br>
+        🗳️ ${i.votes || 0} votes
+      </div>
+    `).join("");
+
+  // all ideas
+  document.getElementById("ideas").innerHTML =
+    data.map(i => `
+      <div class="idea">
+        💡 ${i.text}<br><br>
+        🗳️ ${i.votes || 0} votes
+
+        <button class="voteBtn" onclick="voteIdea('${i.id}')">
+          ${hasVoted(i.id) ? "Voted ✔" : "Vote"}
+        </button>
+      </div>
+    `).join("");
+}
+
+/* VOTE */
+async function voteIdea(id){
+
+  if(hasVoted(id)){
+    alert("You already voted on this idea.");
+    return;
+  }
+
+  const { data } = await client
+    .from("ideas")
+    .select("votes")
+    .eq("id", id)
+    .single();
+
+  const newVotes = (data?.votes || 0) + 1;
+
+  await client
+    .from("ideas")
+    .update({ votes: newVotes })
+    .eq("id", id);
+
+  markVoted(id);
+
+  loadIdeas();
+  confetti({particleCount:80, spread:60});
+}
+
+/* SUBMIT IDEA */
+async function submitIdea(){
+  const text = document.getElementById("ideaInput").value;
+  if(!text) return;
+
+  await client.from("ideas").insert({ text, votes:0 });
+
+  document.getElementById("ideaInput").value = "";
+  loadIdeas();
+}
+
+/* MULTI UPLOAD (25 MAX) */
 async function uploadPhotos(){
 
   if(document.getElementById("uploadPassword").value !== UPLOAD_PASSWORD){
@@ -194,7 +292,7 @@ async function uploadPhotos(){
 
   const limit = Math.min(files.length, 25);
 
-  for(let i = 0; i < limit; i++){
+  for(let i=0;i<limit;i++){
 
     const file = files[i];
     const name = Date.now() + "-" + file.name;
@@ -228,8 +326,10 @@ async function loadPhotos(){
 }
 
 /* INIT */
+loadIdeas();
 loadPhotos();
 updateTimer();
+
 setInterval(updateTimer,1000);
 
 </script>
