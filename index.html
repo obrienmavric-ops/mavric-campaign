@@ -17,41 +17,34 @@ body{
   color:white;
 }
 
-/* HERO */
 .hero{
   text-align:center;
-  padding:80px 20px 50px;
+  padding:80px 20px 40px;
   background: radial-gradient(circle at top, #4c1d95, #000);
 }
 
 .hero h1{
-  font-size:38px;
   margin:0;
   color:#c084fc;
-  letter-spacing:1px;
+  font-size:36px;
 }
 
 .slogan{
-  font-size:20px;
-  margin-top:10px;
   color:gold;
   font-weight:bold;
+  margin-top:10px;
 }
 
-/* COUNTDOWN BADGE */
 .badge{
   display:inline-block;
-  margin-top:15px;
-  padding:10px 18px;
+  margin-top:12px;
+  padding:10px 16px;
   border-radius:999px;
   background:#111;
   border:1px solid #333;
   color:#c084fc;
-  font-weight:bold;
-  box-shadow:0 0 15px rgba(168,85,247,0.3);
 }
 
-/* SECTIONS */
 .section{
   max-width:900px;
   margin:auto;
@@ -61,35 +54,32 @@ body{
 h2{
   text-align:center;
   color:#c084fc;
-  margin-bottom:15px;
 }
 
-/* MISSION CARD */
 .mission{
-  background:linear-gradient(145deg,#111,#0a0a0a);
+  background:#111;
   border:1px solid #222;
-  padding:18px;
-  border-radius:14px;
-  line-height:1.6;
-  font-size:15px;
+  padding:16px;
+  border-radius:12px;
+  line-height:1.5;
 }
 
 /* IDEAS */
 .idea{
   background:#111;
   border:1px solid #222;
-  padding:14px;
-  border-radius:12px;
+  padding:12px;
   margin:10px 0;
+  border-radius:10px;
 }
 
 .voteBtn{
   margin-top:10px;
   width:100%;
   padding:10px;
-  border-radius:10px;
-  border:none;
+  border-radius:8px;
   background:#1f1f1f;
+  border:none;
   color:white;
 }
 
@@ -109,7 +99,7 @@ button{
   font-weight:bold;
 }
 
-/* FEED */
+/* PHOTOS */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -133,42 +123,30 @@ button{
 
 <body>
 
-<!-- HERO -->
 <div class="hero">
   <h1>Mavric for Student Leadership</h1>
   <div class="slogan">“Your Voice, My Actions.”</div>
-  <div class="badge" id="timer">Loading countdown...</div>
+  <div class="badge" id="timer"></div>
 </div>
 
-<!-- MISSION -->
 <div class="section">
-  <h2>🎯 Mission Statement</h2>
+  <h2>🎯 Mission</h2>
   <div class="mission">
-    My mission is simple: listen, represent, and act.<br><br>
-    I will take student ideas seriously and turn them into real improvements in our school.
-    I believe leadership should be transparent, honest, and focused on students first.<br><br>
-    Every vote, every voice, and every idea matters — and I will make sure they are heard and acted on.
+    I will listen to students, represent their ideas, and turn feedback into real action.
+    My goal is to improve communication, fairness, and student involvement in school decisions.
+    Every student deserves to be heard and taken seriously.
+    I will make sure ideas don’t just get collected — they get acted on.
   </div>
 </div>
 
-<!-- IDEAS -->
 <div class="section">
-  <h2>💡 Ideas</h2>
+  <h2>📸 Supporter Uploads</h2>
 
-  <input id="ideaInput" placeholder="Submit your idea">
-  <button onclick="submitIdea()">Submit Idea</button>
-
-  <div id="ideas"></div>
-</div>
-
-<!-- FEED -->
-<div class="section">
-  <h2>📸 Supporter Feed</h2>
-
-  <input type="file" id="fileInput">
-  <input id="captionInput" placeholder="Caption">
+  <!-- MULTI UPLOAD -->
+  <input type="file" id="fileInput" multiple accept="image/*">
+  <input id="captionInput" placeholder="Caption (applies to all)">
   <input id="uploadPassword" placeholder="Upload password">
-  <button onclick="uploadPhoto()">Upload</button>
+  <button onclick="uploadPhotos()">Upload up to 25 images</button>
 
   <div class="feed" id="feed"></div>
 </div>
@@ -179,9 +157,11 @@ const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const UPLOAD_PASSWORD = "1234";
+
 const end = new Date("2026-04-24T00:00:00");
 
-/* COUNTDOWN */
+/* TIMER */
 function updateTimer(){
   const diff = end - new Date();
 
@@ -196,102 +176,42 @@ function updateTimer(){
   const m = Math.floor(diff/60000)%60;
 
   document.getElementById("timer").innerHTML =
-    `⏳ ${d}d ${h}h ${m}m until voting`;
+    `⏳ ${d}d ${h}h ${m}m left`;
 }
 
-/* VOTING LOCK */
-function voteKey(id){
-  return "voted_" + id;
-}
-
-function hasVoted(id){
-  return localStorage.getItem(voteKey(id)) === "true";
-}
-
-function markVoted(id){
-  localStorage.setItem(voteKey(id),"true");
-}
-
-/* IDEAS */
-async function loadIdeas(){
-  const { data } = await client.from("ideas").select("*");
-  if(!data) return;
-
-  document.getElementById("ideas").innerHTML = data.map(i => `
-    <div class="idea">
-      💡 ${i.text}<br><br>
-      🗳️ ${i.votes || 0} votes
-      <button class="voteBtn" onclick="voteIdea('${i.id}')">
-        ${hasVoted(i.id) ? "Voted ✔" : "Vote"}
-      </button>
-    </div>
-  `).join("");
-}
-
-/* VOTE */
-async function voteIdea(id){
-
-  if(hasVoted(id)){
-    alert("You already voted on this idea.");
-    return;
-  }
-
-  const { data } = await client
-    .from("ideas")
-    .select("votes")
-    .eq("id", id)
-    .single();
-
-  const newVotes = (data?.votes || 0) + 1;
-
-  await client
-    .from("ideas")
-    .update({ votes: newVotes })
-    .eq("id", id);
-
-  markVoted(id);
-
-  loadIdeas();
-
-  confetti({particleCount:80, spread:60});
-}
-
-/* SUBMIT IDEA */
-async function submitIdea(){
-  const text = document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await client.from("ideas").insert({ text, votes:0 });
-
-  document.getElementById("ideaInput").value = "";
-  loadIdeas();
-}
-
-/* PHOTOS */
-const UPLOAD_PASSWORD = "1234";
-
-async function uploadPhoto(){
+/* MULTI PHOTO UPLOAD (MAX 25) */
+async function uploadPhotos(){
 
   if(document.getElementById("uploadPassword").value !== UPLOAD_PASSWORD){
     alert("Wrong password");
     return;
   }
 
-  const file = document.getElementById("fileInput").files[0];
+  const files = document.getElementById("fileInput").files;
   const caption = document.getElementById("captionInput").value;
 
-  if(!file) return;
+  if(!files.length) return;
 
-  const name = Date.now() + "-" + file.name;
+  const limit = Math.min(files.length, 25);
 
-  await client.storage.from("campaign").upload(name, file);
+  for(let i = 0; i < limit; i++){
 
-  const url = client.storage.from("campaign")
-    .getPublicUrl(name).data.publicUrl;
+    const file = files[i];
+    const name = Date.now() + "-" + file.name;
 
-  await client.from("photos").insert({ url, caption });
+    await client.storage.from("campaign").upload(name, file);
+
+    const url = client.storage.from("campaign")
+      .getPublicUrl(name).data.publicUrl;
+
+    await client.from("photos").insert({
+      url,
+      caption
+    });
+  }
 
   loadPhotos();
+  confetti({particleCount:100, spread:70});
 }
 
 /* LOAD PHOTOS */
@@ -308,7 +228,6 @@ async function loadPhotos(){
 }
 
 /* INIT */
-loadIdeas();
 loadPhotos();
 updateTimer();
 setInterval(updateTimer,1000);
