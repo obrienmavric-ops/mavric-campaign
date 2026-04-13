@@ -13,37 +13,90 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0a0a0a;
+  background:#070707;
   color:white;
 }
 
+/* HERO */
 .hero{
-  padding:60px 20px;
   text-align:center;
-  background: radial-gradient(circle at top, #3b0764, #000);
+  padding:80px 20px 50px;
+  background: radial-gradient(circle at top, #4c1d95, #000);
 }
 
-.hero h1{ color:#c084fc; margin:0; }
-.slogan{ color:gold; font-weight:bold; margin-top:10px; }
+.hero h1{
+  font-size:38px;
+  margin:0;
+  color:#c084fc;
+  letter-spacing:1px;
+}
 
+.slogan{
+  font-size:20px;
+  margin-top:10px;
+  color:gold;
+  font-weight:bold;
+}
+
+/* COUNTDOWN BADGE */
+.badge{
+  display:inline-block;
+  margin-top:15px;
+  padding:10px 18px;
+  border-radius:999px;
+  background:#111;
+  border:1px solid #333;
+  color:#c084fc;
+  font-weight:bold;
+  box-shadow:0 0 15px rgba(168,85,247,0.3);
+}
+
+/* SECTIONS */
 .section{
-  padding:25px 15px;
   max-width:900px;
   margin:auto;
+  padding:30px 15px;
 }
 
-h2{ color:#c084fc; text-align:center; }
+h2{
+  text-align:center;
+  color:#c084fc;
+  margin-bottom:15px;
+}
 
-.card{
+/* MISSION CARD */
+.mission{
+  background:linear-gradient(145deg,#111,#0a0a0a);
+  border:1px solid #222;
+  padding:18px;
+  border-radius:14px;
+  line-height:1.6;
+  font-size:15px;
+}
+
+/* IDEAS */
+.idea{
   background:#111;
   border:1px solid #222;
-  padding:12px;
-  border-radius:10px;
+  padding:14px;
+  border-radius:12px;
+  margin:10px 0;
 }
 
+.voteBtn{
+  margin-top:10px;
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:none;
+  background:#1f1f1f;
+  color:white;
+}
+
+/* INPUTS */
 input, button{
   width:100%;
-  max-width:400px;
+  max-width:420px;
   padding:12px;
   margin:6px auto;
   display:block;
@@ -53,26 +106,10 @@ input, button{
 
 button{
   background:#a855f7;
-  color:white;
   font-weight:bold;
 }
 
-/* IDEAS */
-.idea{
-  background:#111;
-  border:1px solid #222;
-  padding:12px;
-  margin:10px 0;
-  border-radius:10px;
-}
-
-.voteBtn{
-  margin-top:8px;
-  background:#222;
-  border:1px solid #333;
-}
-
-/* PHOTOS */
+/* FEED */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -83,38 +120,48 @@ button{
   width:100%;
   aspect-ratio:1/1;
   object-fit:cover;
-  border-radius:10px;
+  border-radius:12px;
 }
 
 .caption{
-  padding:8px;
-}
-
-/* TIMER */
-#timer{
-  color:#c084fc;
-  margin-top:10px;
+  font-size:13px;
+  padding:6px;
+  color:#ccc;
 }
 </style>
 </head>
 
 <body>
 
+<!-- HERO -->
 <div class="hero">
   <h1>Mavric for Student Leadership</h1>
   <div class="slogan">“Your Voice, My Actions.”</div>
-  <div id="timer"></div>
+  <div class="badge" id="timer">Loading countdown...</div>
 </div>
 
+<!-- MISSION -->
+<div class="section">
+  <h2>🎯 Mission Statement</h2>
+  <div class="mission">
+    My mission is simple: listen, represent, and act.<br><br>
+    I will take student ideas seriously and turn them into real improvements in our school.
+    I believe leadership should be transparent, honest, and focused on students first.<br><br>
+    Every vote, every voice, and every idea matters — and I will make sure they are heard and acted on.
+  </div>
+</div>
+
+<!-- IDEAS -->
 <div class="section">
   <h2>💡 Ideas</h2>
 
-  <input id="ideaInput" placeholder="Submit idea">
-  <button onclick="submitIdea()">Submit</button>
+  <input id="ideaInput" placeholder="Submit your idea">
+  <button onclick="submitIdea()">Submit Idea</button>
 
   <div id="ideas"></div>
 </div>
 
+<!-- FEED -->
 <div class="section">
   <h2>📸 Supporter Feed</h2>
 
@@ -134,13 +181,13 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const end = new Date("2026-04-24T00:00:00");
 
-/* TIMER */
+/* COUNTDOWN */
 function updateTimer(){
   const diff = end - new Date();
 
   if(diff <= 0){
     document.getElementById("timer").innerHTML =
-      "🗳️ VOTING DAY IS FRIDAY, APRIL 24TH, 2026";
+      "🗳️ VOTING DAY IS HERE";
     return;
   }
 
@@ -149,27 +196,23 @@ function updateTimer(){
   const m = Math.floor(diff/60000)%60;
 
   document.getElementById("timer").innerHTML =
-    `⏳ ${d}d ${h}h ${m}m left`;
+    `⏳ ${d}d ${h}h ${m}m until voting`;
 }
 
-/* =========================
-   VOTING SYSTEM (FIXED)
-   1 VOTE PER PERSON PER IDEA
-========================= */
-
-function voteKey(ideaId){
-  return "voted_idea_" + ideaId;
+/* VOTING LOCK */
+function voteKey(id){
+  return "voted_" + id;
 }
 
-function hasVoted(ideaId){
-  return localStorage.getItem(voteKey(ideaId)) === "true";
+function hasVoted(id){
+  return localStorage.getItem(voteKey(id)) === "true";
 }
 
-function markVoted(ideaId){
-  localStorage.setItem(voteKey(ideaId), "true");
+function markVoted(id){
+  localStorage.setItem(voteKey(id),"true");
 }
 
-/* LOAD IDEAS */
+/* IDEAS */
 async function loadIdeas(){
   const { data } = await client.from("ideas").select("*");
   if(!data) return;
@@ -178,9 +221,8 @@ async function loadIdeas(){
     <div class="idea">
       💡 ${i.text}<br><br>
       🗳️ ${i.votes || 0} votes
-
       <button class="voteBtn" onclick="voteIdea('${i.id}')">
-        ${hasVoted(i.id) ? "Already Voted" : "Vote"}
+        ${hasVoted(i.id) ? "Voted ✔" : "Vote"}
       </button>
     </div>
   `).join("");
@@ -190,7 +232,7 @@ async function loadIdeas(){
 async function voteIdea(id){
 
   if(hasVoted(id)){
-    alert("You already voted for this idea.");
+    alert("You already voted on this idea.");
     return;
   }
 
@@ -222,7 +264,6 @@ async function submitIdea(){
   await client.from("ideas").insert({ text, votes:0 });
 
   document.getElementById("ideaInput").value = "";
-
   loadIdeas();
 }
 
@@ -270,8 +311,7 @@ async function loadPhotos(){
 loadIdeas();
 loadPhotos();
 updateTimer();
-
-setInterval(updateTimer, 1000);
+setInterval(updateTimer,1000);
 
 </script>
 
