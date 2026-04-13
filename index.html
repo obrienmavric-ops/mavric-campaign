@@ -10,10 +10,6 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-
-/* =========================
-   GLOBAL
-========================= */
 body{
   margin:0;
   font-family:Arial;
@@ -21,66 +17,30 @@ body{
   color:white;
 }
 
-/* =========================
-   HERO (PRO CAMPAIGN LOOK)
-========================= */
 .hero{
   padding:60px 20px;
   text-align:center;
   background: radial-gradient(circle at top, #3b0764, #000);
-  border-bottom:1px solid #222;
 }
 
-.hero h1{
-  font-size:34px;
-  margin:0;
-  color:#c084fc;
-}
+.hero h1{ color:#c084fc; margin:0; }
+.slogan{ color:gold; font-weight:bold; margin-top:10px; }
 
-.hero p{
-  max-width:700px;
-  margin:12px auto;
-  color:#ddd;
-  font-size:16px;
-  line-height:1.5;
-}
-
-.slogan{
-  margin-top:10px;
-  font-size:18px;
-  color:gold;
-  font-weight:bold;
-}
-
-/* =========================
-   SECTIONS
-========================= */
 .section{
-  padding:30px 16px;
+  padding:25px 15px;
   max-width:900px;
   margin:auto;
 }
 
-.section h2{
-  text-align:center;
-  color:#c084fc;
-  margin-bottom:12px;
-}
+h2{ color:#c084fc; text-align:center; }
 
-/* =========================
-   CARD STYLE
-========================= */
 .card{
   background:#111;
   border:1px solid #222;
-  border-radius:12px;
-  padding:14px;
-  margin:10px 0;
+  padding:12px;
+  border-radius:10px;
 }
 
-/* =========================
-   INPUTS
-========================= */
 input, button{
   width:100%;
   max-width:400px;
@@ -94,136 +54,67 @@ input, button{
 button{
   background:#a855f7;
   color:white;
-  cursor:pointer;
   font-weight:bold;
 }
 
-/* =========================
-   TIMER
-========================= */
-#timer{
-  text-align:center;
-  font-size:18px;
-  color:#c084fc;
-  margin-top:10px;
-}
-
-.voting-day{
-  font-size:22px;
-  color:gold;
-  font-weight:bold;
-  text-shadow:0 0 10px gold;
-}
-
-/* =========================
-   IDEAS
-========================= */
+/* IDEAS */
 .idea{
   background:#111;
   border:1px solid #222;
-  border-radius:10px;
   padding:12px;
   margin:10px 0;
+  border-radius:10px;
 }
 
 .voteBtn{
   margin-top:8px;
-  padding:8px;
   background:#222;
   border:1px solid #333;
 }
 
-/* =========================
-   PHOTO GRID (FIXED)
-========================= */
+/* PHOTOS */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:10px;
 }
 
-.photo{
-  background:#111;
-  border-radius:10px;
-  overflow:hidden;
-  border:1px solid #222;
-}
-
 .photo img{
   width:100%;
   aspect-ratio:1/1;
   object-fit:cover;
+  border-radius:10px;
 }
 
 .caption{
   padding:8px;
-  font-size:13px;
-  color:#ddd;
 }
 
-/* =========================
-   MOBILE
-========================= */
-@media (max-width:700px){
-  .feed{
-    grid-template-columns:1fr;
-  }
-
-  .hero h1{
-    font-size:26px;
-  }
+/* TIMER */
+#timer{
+  color:#c084fc;
+  margin-top:10px;
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- =========================
-     HERO SECTION
-========================= -->
 <div class="hero">
   <h1>Mavric for Student Leadership</h1>
-
   <div class="slogan">“Your Voice, My Actions.”</div>
-
-  <p>
-    I believe leadership should be simple: listen to students, take their ideas seriously, and turn them into real change.
-    This campaign is built around action, not promises.
-  </p>
-
   <div id="timer"></div>
 </div>
 
-<!-- =========================
-     MISSION
-========================= -->
 <div class="section">
-  <h2>🎯 Mission</h2>
+  <h2>💡 Ideas</h2>
 
-  <div class="card">
-    My mission is to create a school where every student feels heard and represented.  
-    I will focus on turning student ideas into real improvements you can actually see and feel.  
-    I want to improve communication between students and leadership so decisions reflect real needs.  
-    I will keep things transparent so you always know what is being done and why.  
-  </div>
+  <input id="ideaInput" placeholder="Submit idea">
+  <button onclick="submitIdea()">Submit</button>
+
+  <div id="ideas"></div>
 </div>
 
-<!-- =========================
-     IDEAS
-========================= -->
-<div class="section">
-  <h2>💡 Student Ideas</h2>
-
-  <input id="ideaInput" placeholder="Submit your idea">
-  <button onclick="submitIdea()">Submit Idea</button>
-
-  <div id="ideas">Loading...</div>
-</div>
-
-<!-- =========================
-     PHOTO FEED
-========================= -->
 <div class="section">
   <h2>📸 Supporter Feed</h2>
 
@@ -237,29 +128,19 @@ button{
 
 <script>
 
-/* =========================
-   SUPABASE
-========================= */
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
-
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* PASSWORD */
-const UPLOAD_PASSWORD = "1234";
-
-/* =========================
-   TIMER
-========================= */
 const end = new Date("2026-04-24T00:00:00");
 
+/* TIMER */
 function updateTimer(){
-  const now = new Date();
-  const diff = end - now;
+  const diff = end - new Date();
 
   if(diff <= 0){
     document.getElementById("timer").innerHTML =
-      `<div class="voting-day">🗳️ VOTING DAY IS FRIDAY, APRIL 24TH, 2026</div>`;
+      "🗳️ VOTING DAY IS FRIDAY, APRIL 24TH, 2026";
     return;
   }
 
@@ -268,26 +149,72 @@ function updateTimer(){
   const m = Math.floor(diff/60000)%60;
 
   document.getElementById("timer").innerHTML =
-    `⏳ ${d} days ${h} hours ${m} minutes left`;
+    `⏳ ${d}d ${h}h ${m}m left`;
 }
 
 /* =========================
-   IDEAS + VOTING
+   VOTING SYSTEM (FIXED)
+   1 VOTE PER PERSON PER IDEA
 ========================= */
+
+function voteKey(ideaId){
+  return "voted_idea_" + ideaId;
+}
+
+function hasVoted(ideaId){
+  return localStorage.getItem(voteKey(ideaId)) === "true";
+}
+
+function markVoted(ideaId){
+  localStorage.setItem(voteKey(ideaId), "true");
+}
+
+/* LOAD IDEAS */
 async function loadIdeas(){
   const { data } = await client.from("ideas").select("*");
-
   if(!data) return;
 
   document.getElementById("ideas").innerHTML = data.map(i => `
     <div class="idea">
       💡 ${i.text}<br><br>
       🗳️ ${i.votes || 0} votes
-      <button class="voteBtn" onclick="voteIdea('${i.id}', ${i.votes || 0})">Vote</button>
+
+      <button class="voteBtn" onclick="voteIdea('${i.id}')">
+        ${hasVoted(i.id) ? "Already Voted" : "Vote"}
+      </button>
     </div>
   `).join("");
 }
 
+/* VOTE */
+async function voteIdea(id){
+
+  if(hasVoted(id)){
+    alert("You already voted for this idea.");
+    return;
+  }
+
+  const { data } = await client
+    .from("ideas")
+    .select("votes")
+    .eq("id", id)
+    .single();
+
+  const newVotes = (data?.votes || 0) + 1;
+
+  await client
+    .from("ideas")
+    .update({ votes: newVotes })
+    .eq("id", id);
+
+  markVoted(id);
+
+  loadIdeas();
+
+  confetti({particleCount:80, spread:60});
+}
+
+/* SUBMIT IDEA */
 async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
@@ -295,26 +222,16 @@ async function submitIdea(){
   await client.from("ideas").insert({ text, votes:0 });
 
   document.getElementById("ideaInput").value = "";
-  loadIdeas();
-
-  confetti({particleCount:80, spread:60});
-}
-
-async function voteIdea(id, votes){
-  await client.from("ideas")
-    .update({ votes: votes + 1 })
-    .eq("id", id);
 
   loadIdeas();
 }
 
-/* =========================
-   PHOTOS
-========================= */
+/* PHOTOS */
+const UPLOAD_PASSWORD = "1234";
+
 async function uploadPhoto(){
 
-  const pass = document.getElementById("uploadPassword").value;
-  if(pass !== UPLOAD_PASSWORD){
+  if(document.getElementById("uploadPassword").value !== UPLOAD_PASSWORD){
     alert("Wrong password");
     return;
   }
@@ -336,6 +253,7 @@ async function uploadPhoto(){
   loadPhotos();
 }
 
+/* LOAD PHOTOS */
 async function loadPhotos(){
   const { data } = await client.from("photos").select("*");
   if(!data) return;
@@ -348,9 +266,7 @@ async function loadPhotos(){
   `).join("");
 }
 
-/* =========================
-   INIT
-========================= */
+/* INIT */
 loadIdeas();
 loadPhotos();
 updateTimer();
