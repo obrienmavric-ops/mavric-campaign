@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>Mavric Campaign</title>
 
@@ -10,87 +10,132 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
+
+/* =========================
+   GLOBAL
+========================= */
 body{
   margin:0;
   font-family:Arial;
-  background:#000;
-  color:#fff;
+  background:#0a0a0a;
+  color:white;
 }
 
-/* HEADER */
-header{
-  position:sticky;
-  top:0;
-  background:#111;
-  padding:12px;
+/* =========================
+   HERO (PRO CAMPAIGN LOOK)
+========================= */
+.hero{
+  padding:60px 20px;
   text-align:center;
-  color:#a855f7;
+  background: radial-gradient(circle at top, #3b0764, #000);
+  border-bottom:1px solid #222;
+}
+
+.hero h1{
+  font-size:34px;
+  margin:0;
+  color:#c084fc;
+}
+
+.hero p{
+  max-width:700px;
+  margin:12px auto;
+  color:#ddd;
+  font-size:16px;
+  line-height:1.5;
+}
+
+.slogan{
+  margin-top:10px;
+  font-size:18px;
+  color:gold;
   font-weight:bold;
 }
 
-/* SECTIONS */
+/* =========================
+   SECTIONS
+========================= */
 .section{
-  padding:20px;
+  padding:30px 16px;
+  max-width:900px;
+  margin:auto;
+}
+
+.section h2{
   text-align:center;
+  color:#c084fc;
+  margin-bottom:12px;
 }
 
-/* SLOGAN */
-.slogan{
-  font-size:20px;
-  color:#a855f7;
-  margin-top:10px;
+/* =========================
+   CARD STYLE
+========================= */
+.card{
+  background:#111;
+  border:1px solid #222;
+  border-radius:12px;
+  padding:14px;
+  margin:10px 0;
 }
 
-/* MISSION */
-.mission{
-  max-width:600px;
-  margin:10px auto;
-  font-size:14px;
-  line-height:1.5;
-  color:#ccc;
-}
-
-/* INPUTS */
+/* =========================
+   INPUTS
+========================= */
 input, button{
-  width:90%;
-  max-width:320px;
+  width:100%;
+  max-width:400px;
   padding:12px;
   margin:6px auto;
-  border-radius:8px;
-  border:none;
   display:block;
+  border-radius:10px;
+  border:none;
 }
 
 button{
   background:#a855f7;
   color:white;
   cursor:pointer;
+  font-weight:bold;
 }
 
-/* IDEAS */
-.idea{
-  background:#111;
-  border:1px solid #333;
-  padding:10px;
-  margin:10px auto;
-  max-width:500px;
-  border-radius:10px;
-}
-
-/* TIMER */
+/* =========================
+   TIMER
+========================= */
 #timer{
+  text-align:center;
   font-size:18px;
+  color:#c084fc;
   margin-top:10px;
-  color:#a855f7;
 }
 
 .voting-day{
   font-size:22px;
   color:gold;
+  font-weight:bold;
   text-shadow:0 0 10px gold;
 }
 
-/* FEED */
+/* =========================
+   IDEAS
+========================= */
+.idea{
+  background:#111;
+  border:1px solid #222;
+  border-radius:10px;
+  padding:12px;
+  margin:10px 0;
+}
+
+.voteBtn{
+  margin-top:8px;
+  padding:8px;
+  background:#222;
+  border:1px solid #333;
+}
+
+/* =========================
+   PHOTO GRID (FIXED)
+========================= */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
@@ -99,51 +144,92 @@ button{
 
 .photo{
   background:#111;
-  padding:8px;
   border-radius:10px;
+  overflow:hidden;
+  border:1px solid #222;
 }
 
 .photo img{
   width:100%;
-  height:120px;
+  aspect-ratio:1/1;
   object-fit:cover;
-  border-radius:8px;
 }
+
+.caption{
+  padding:8px;
+  font-size:13px;
+  color:#ddd;
+}
+
+/* =========================
+   MOBILE
+========================= */
+@media (max-width:700px){
+  .feed{
+    grid-template-columns:1fr;
+  }
+
+  .hero h1{
+    font-size:26px;
+  }
+}
+
 </style>
 </head>
 
 <body>
 
-<header>🗳️ Mavric Campaign Page</header>
+<!-- =========================
+     HERO SECTION
+========================= -->
+<div class="hero">
+  <h1>Mavric for Student Leadership</h1>
 
-<div class="section">
   <div class="slogan">“Your Voice, My Actions.”</div>
 
-  <div class="mission">
-    This campaign is built to represent real student voices, not promises that disappear after election day.
-    Every idea submitted here will be reviewed and taken seriously, because change starts with listening.
-    My goal is to turn your suggestions into real action that improves school life for everyone.
-    Together, we can build a stronger, more connected school community where every voice matters.
-  </div>
+  <p>
+    I believe leadership should be simple: listen to students, take their ideas seriously, and turn them into real change.
+    This campaign is built around action, not promises.
+  </p>
 
   <div id="timer"></div>
 </div>
 
-<!-- IDEAS -->
+<!-- =========================
+     MISSION
+========================= -->
 <div class="section">
-  <h2>💡 Ideas</h2>
-  <input id="ideaInput" placeholder="Submit idea">
-  <button onclick="submitIdea()">Submit</button>
+  <h2>🎯 Mission</h2>
+
+  <div class="card">
+    My mission is to create a school where every student feels heard and represented.  
+    I will focus on turning student ideas into real improvements you can actually see and feel.  
+    I want to improve communication between students and leadership so decisions reflect real needs.  
+    I will keep things transparent so you always know what is being done and why.  
+  </div>
+</div>
+
+<!-- =========================
+     IDEAS
+========================= -->
+<div class="section">
+  <h2>💡 Student Ideas</h2>
+
+  <input id="ideaInput" placeholder="Submit your idea">
+  <button onclick="submitIdea()">Submit Idea</button>
+
   <div id="ideas">Loading...</div>
 </div>
 
-<!-- PHOTO UPLOAD -->
+<!-- =========================
+     PHOTO FEED
+========================= -->
 <div class="section">
   <h2>📸 Supporter Feed</h2>
 
-  <input id="fileInput" type="file">
+  <input type="file" id="fileInput">
   <input id="captionInput" placeholder="Caption">
-  <input id="uploadPassword" type="password" placeholder="Upload password">
+  <input id="uploadPassword" placeholder="Upload password">
   <button onclick="uploadPhoto()">Upload</button>
 
   <div class="feed" id="feed"></div>
@@ -151,18 +237,22 @@ button{
 
 <script>
 
+/* =========================
+   SUPABASE
+========================= */
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// CHANGE THIS PASSWORD IF YOU WANT
-const UPLOAD_PASSWORD = "mavric2026";
+/* PASSWORD */
+const UPLOAD_PASSWORD = "1234";
 
-// COUNTDOWN DATE
+/* =========================
+   TIMER
+========================= */
 const end = new Date("2026-04-24T00:00:00");
 
-/* TIMER */
 function updateTimer(){
   const now = new Date();
   const diff = end - now;
@@ -178,29 +268,22 @@ function updateTimer(){
   const m = Math.floor(diff/60000)%60;
 
   document.getElementById("timer").innerHTML =
-    `⏳ ${d}d ${h}h ${m}m left`;
+    `⏳ ${d} days ${h} hours ${m} minutes left`;
 }
 
-/* IDEAS */
+/* =========================
+   IDEAS + VOTING
+========================= */
 async function loadIdeas(){
-  const { data, error } = await client.from("ideas").select("*");
+  const { data } = await client.from("ideas").select("*");
 
-  const el = document.getElementById("ideas");
+  if(!data) return;
 
-  if(error){
-    el.innerHTML = "Error: " + error.message;
-    return;
-  }
-
-  if(!data){
-    el.innerHTML = "No ideas yet";
-    return;
-  }
-
-  el.innerHTML = data.map(i => `
+  document.getElementById("ideas").innerHTML = data.map(i => `
     <div class="idea">
-      💡 ${i.text}<br>
-      🗳️ ${i.votes || 0} votes | ❤️ ${i.likes || 0}
+      💡 ${i.text}<br><br>
+      🗳️ ${i.votes || 0} votes
+      <button class="voteBtn" onclick="voteIdea('${i.id}', ${i.votes || 0})">Vote</button>
     </div>
   `).join("");
 }
@@ -209,11 +292,7 @@ async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({
-    text,
-    votes:0,
-    likes:0
-  });
+  await client.from("ideas").insert({ text, votes:0 });
 
   document.getElementById("ideaInput").value = "";
   loadIdeas();
@@ -221,73 +300,62 @@ async function submitIdea(){
   confetti({particleCount:80, spread:60});
 }
 
-/* PHOTO UPLOAD (PASSWORD PROTECTED) */
+async function voteIdea(id, votes){
+  await client.from("ideas")
+    .update({ votes: votes + 1 })
+    .eq("id", id);
+
+  loadIdeas();
+}
+
+/* =========================
+   PHOTOS
+========================= */
 async function uploadPhoto(){
 
-  const password = document.getElementById("uploadPassword").value;
-  if(password !== UPLOAD_PASSWORD){
-    alert("Incorrect upload password");
+  const pass = document.getElementById("uploadPassword").value;
+  if(pass !== UPLOAD_PASSWORD){
+    alert("Wrong password");
     return;
   }
 
   const file = document.getElementById("fileInput").files[0];
   const caption = document.getElementById("captionInput").value;
 
-  if(!file){
-    alert("No file selected");
-    return;
-  }
+  if(!file) return;
 
   const name = Date.now() + "-" + file.name;
 
-  const { error } = await client.storage
-    .from("campaign")
-    .upload(name, file);
+  await client.storage.from("campaign").upload(name, file);
 
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  const url = client.storage
-    .from("campaign")
+  const url = client.storage.from("campaign")
     .getPublicUrl(name).data.publicUrl;
 
-  await client.from("photos").insert({
-    url,
-    caption,
-    likes:0
-  });
-
-  document.getElementById("fileInput").value = "";
-  document.getElementById("captionInput").value = "";
-  document.getElementById("uploadPassword").value = "";
+  await client.from("photos").insert({ url, caption });
 
   loadPhotos();
 }
 
-/* PHOTOS */
 async function loadPhotos(){
   const { data } = await client.from("photos").select("*");
-
   if(!data) return;
 
   document.getElementById("feed").innerHTML = data.map(p => `
     <div class="photo">
       <img src="${p.url}">
-      <div>${p.caption || ""}</div>
+      <div class="caption">${p.caption || ""}</div>
     </div>
   `).join("");
 }
 
-/* INIT */
+/* =========================
+   INIT
+========================= */
 loadIdeas();
 loadPhotos();
 updateTimer();
 
-setInterval(updateTimer,1000);
-setInterval(loadIdeas,4000);
-setInterval(loadPhotos,4000);
+setInterval(updateTimer, 1000);
 
 </script>
 
