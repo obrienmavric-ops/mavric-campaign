@@ -12,49 +12,66 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0a0a0a;
   color:white;
+  background:linear-gradient(-45deg,#050505,#120018,#050505,#1a0033);
+  background-size:400% 400%;
+  animation:bg 12s ease infinite;
+}
+
+@keyframes bg{
+  0%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+  100%{background-position:0% 50%;}
 }
 
 /* HEADER */
 header{
   position:sticky;
   top:0;
-  background:#111;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(10px);
   padding:15px;
   text-align:center;
-  color:#a855f7;
-  font-size:20px;
   font-weight:bold;
+  color:#d8b4fe;
 }
 
 /* HERO */
 .hero{
   text-align:center;
-  padding:40px 20px;
+  padding:60px 20px;
 }
 
 .hero h1{
-  font-size:32px;
+  font-size:42px;
+  background:linear-gradient(90deg,#a855f7,#c084fc,#e879f9);
+  -webkit-background-clip:text;
+  color:transparent;
 }
 
 .slogan{
-  color:#a855f7;
-  font-size:20px;
   margin-top:10px;
+  font-size:20px;
+  color:#ddd;
 }
 
 .mission{
-  max-width:600px;
+  max-width:650px;
   margin:20px auto;
-  color:#ccc;
-  line-height:1.5;
+  color:#bbb;
+  line-height:1.6;
 }
 
-/* SECTIONS */
+/* TIMER */
+#timer{
+  margin-top:15px;
+  font-size:18px;
+  color:#c084fc;
+}
+
+/* SECTION */
 .section{
-  padding:25px;
-  text-align:center;
+  padding:30px 15px;
 }
 
 /* INPUTS */
@@ -63,74 +80,107 @@ input, button{
   max-width:350px;
   padding:12px;
   margin:6px auto;
-  border-radius:8px;
+  border-radius:12px;
   border:none;
   display:block;
 }
 
 button{
-  background:#a855f7;
+  background:linear-gradient(90deg,#a855f7,#9333ea);
   color:white;
   cursor:pointer;
+  transition:0.2s;
 }
 
-/* IDEAS */
+button:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 15px #a855f7;
+}
+
+/* IDEA CARD */
 .idea{
-  background:#111;
-  border:1px solid #333;
-  padding:12px;
-  margin:10px auto;
+  background:rgba(255,255,255,0.05);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,0.1);
+  padding:15px;
+  margin:12px auto;
   max-width:500px;
-  border-radius:10px;
+  border-radius:15px;
+  transition:0.2s;
+}
+
+.idea:hover{
+  transform:translateY(-4px);
+}
+
+/* VOTE BAR */
+.voteBar{
+  height:8px;
+  background:#222;
+  border-radius:5px;
+  margin-top:8px;
+  overflow:hidden;
+}
+
+.voteFill{
+  height:100%;
+  background:linear-gradient(90deg,#22c55e,#4ade80);
 }
 
 /* VOTE BUTTON */
 .voteBtn{
-  margin-top:8px;
-  background:green;
+  margin-top:10px;
+  background:linear-gradient(90deg,#22c55e,#16a34a);
 }
 
-/* TIMER */
-#timer{
-  font-size:18px;
-  color:#a855f7;
-}
-
-/* GALLERY */
+/* GRID */
 .feed{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
 }
 
+/* PHOTO */
 .photo{
-  background:#111;
-  padding:8px;
-  border-radius:10px;
+  background:rgba(255,255,255,0.05);
+  border-radius:15px;
+  overflow:hidden;
+  transition:0.2s;
+}
+
+.photo:hover{
+  transform:scale(1.05);
+  box-shadow:0 0 20px rgba(168,85,247,0.6);
 }
 
 .photo img{
   width:100%;
-  height:140px;
+  aspect-ratio:1/1;
   object-fit:cover;
-  border-radius:8px;
+}
+
+/* CAPTION */
+.photo div{
+  padding:8px;
+  font-size:14px;
+  color:#ccc;
 }
 </style>
 </head>
 
 <body>
 
-<header>🗳️ Mavric Campaign</header>
+<header>🗳️ MAVRIC CAMPAIGN</header>
 
 <div class="hero">
   <h1>Your Voice. My Actions.</h1>
-  <div class="slogan">Real ideas. Real change. Real results.</div>
+  <div class="slogan">Not just promises — actual results.</div>
 
   <div class="mission">
-    I’m running to represent every student and make sure your ideas actually turn into action. 
-    This campaign is about listening, improving our school experience, and making changes that matter.
-    From better events to stronger communication, I want to make our school a place everyone enjoys.
-    Your voice matters — and I’ll make sure it’s heard.
+    This campaign is about turning student ideas into real action. 
+    I’m here to listen, represent, and make changes that actually improve our school.
+    Whether it's better events, stronger communication, or new opportunities,
+    I want every student to feel heard and involved. Together, we can build something better.
   </div>
 
   <div id="timer"></div>
@@ -138,17 +188,17 @@ button{
 
 <!-- IDEAS -->
 <div class="section">
-  <h2>🔥 Trending Ideas</h2>
+  <h2 style="text-align:center;">🔥 Trending Ideas</h2>
 
-  <input id="ideaInput" placeholder="Share your idea">
-  <button onclick="submitIdea()">Submit Idea</button>
+  <input id="ideaInput" placeholder="Drop your idea">
+  <button onclick="submitIdea()">Submit</button>
 
-  <div id="ideas">Loading...</div>
+  <div id="ideas"></div>
 </div>
 
 <!-- PHOTOS -->
 <div class="section">
-  <h2>📸 Supporter Feed</h2>
+  <h2 style="text-align:center;">📸 Supporter Feed</h2>
 
   <input type="password" id="uploadPass" placeholder="Upload password">
   <input type="file" id="fileInput" multiple>
@@ -160,26 +210,17 @@ button{
 </div>
 
 <script>
-
-/* CONFIG */
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* PASSWORD */
 const UPLOAD_PASSWORD = "mavric2026";
 
 /* TIMER */
-const end = new Date("2026-04-24T00:00:00");
+const end = new Date("2026-04-24");
 
 function updateTimer(){
   const diff = end - new Date();
-
-  if(diff <= 0){
-    timer.innerHTML = "🗳️ VOTING DAY!";
-    return;
-  }
-
   const d = Math.floor(diff/86400000);
   const h = Math.floor(diff/3600000)%24;
   const m = Math.floor(diff/60000)%60;
@@ -196,23 +237,31 @@ async function loadIdeas(){
 
   if(!data) return;
 
-  ideas.innerHTML = data.map(i => `
+  const maxVotes = Math.max(...data.map(i=>i.votes||0),1);
+
+  ideas.innerHTML = data.map(i=>{
+    const percent = ((i.votes||0)/maxVotes)*100;
+
+    return `
     <div class="idea">
       💡 ${i.text}<br>
-      🗳️ ${i.votes || 0}
+      🗳️ ${i.votes||0}
+
+      <div class="voteBar">
+        <div class="voteFill" style="width:${percent}%"></div>
+      </div>
 
       <button class="voteBtn" onclick="vote(${i.id})">👍 Vote</button>
     </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
-/* SUBMIT */
 async function submitIdea(){
-  const text = ideaInput.value;
-  if(!text) return;
+  if(!ideaInput.value) return;
 
   await client.from("ideas").insert({
-    text,
+    text:ideaInput.value,
     votes:0
   });
 
@@ -220,12 +269,12 @@ async function submitIdea(){
   loadIdeas();
 }
 
-/* VOTING (1 per idea per device) */
+/* VOTE */
 async function vote(id){
-  const key = "voted_" + id;
+  const key="voted_"+id;
 
   if(localStorage.getItem(key)){
-    alert("You already voted!");
+    alert("Already voted");
     return;
   }
 
@@ -235,64 +284,53 @@ async function vote(id){
     .eq("id",id)
     .single();
 
-  await client
-    .from("ideas")
-    .update({ votes:(data.votes||0)+1 })
+  await client.from("ideas")
+    .update({votes:(data.votes||0)+1})
     .eq("id",id);
 
   localStorage.setItem(key,true);
-
-  confetti({particleCount:60, spread:50});
+  confetti({particleCount:80, spread:60});
   loadIdeas();
 }
 
-/* UPLOAD PHOTOS */
+/* UPLOAD */
 async function uploadPhotos(){
-  if(uploadPass.value !== UPLOAD_PASSWORD){
+  if(uploadPass.value!==UPLOAD_PASSWORD){
     alert("Wrong password");
     return;
   }
 
-  const files = fileInput.files;
-
-  if(files.length > 25){
-    alert("Max 25 photos");
+  const files=fileInput.files;
+  if(files.length>25){
+    alert("Max 25");
     return;
   }
 
   for(let file of files){
-    const name = Date.now() + "-" + file.name;
+    const name=Date.now()+"-"+file.name;
 
     await client.storage.from("campaign").upload(name,file);
 
-    const url = client.storage
-      .from("campaign")
+    const url=client.storage.from("campaign")
       .getPublicUrl(name).data.publicUrl;
 
     await client.from("photos").insert({
       url,
-      caption: captionInput.value
+      caption:captionInput.value
     });
   }
-
-  fileInput.value="";
-  captionInput.value="";
 
   loadPhotos();
 }
 
 /* LOAD PHOTOS */
 async function loadPhotos(){
-  const { data } = await client
-    .from("photos")
-    .select("*");
+  const { data } = await client.from("photos").select("*");
 
-  if(!data) return;
-
-  feed.innerHTML = data.map(p => `
+  feed.innerHTML = data.map(p=>`
     <div class="photo">
       <img src="${p.url}">
-      <div>${p.caption || ""}</div>
+      <div>${p.caption||""}</div>
     </div>
   `).join("");
 }
@@ -305,7 +343,6 @@ updateTimer();
 setInterval(updateTimer,1000);
 setInterval(loadIdeas,4000);
 setInterval(loadPhotos,4000);
-
 </script>
 
 </body>
