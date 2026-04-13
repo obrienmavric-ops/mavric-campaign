@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
 <title>Mavric Campaign</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,157 +12,132 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#070707;
+  background:#0b0b0f;
   color:white;
 }
 
-.hero{
+header{
+  padding:18px;
   text-align:center;
-  padding:80px 20px 40px;
-  background: radial-gradient(circle at top, #4c1d95, #000);
-}
-
-.hero h1{
-  margin:0;
-  color:#c084fc;
-  font-size:36px;
-}
-
-.slogan{
-  color:gold;
-  font-weight:bold;
-  margin-top:10px;
-}
-
-.badge{
-  display:inline-block;
-  margin-top:12px;
-  padding:10px 16px;
-  border-radius:999px;
   background:#111;
-  border:1px solid #333;
-  color:#c084fc;
+  color:#a855f7;
+  font-weight:bold;
+  font-size:20px;
 }
 
 .section{
+  padding:20px;
   max-width:900px;
   margin:auto;
-  padding:30px 15px;
 }
 
 h2{
-  text-align:center;
-  color:#c084fc;
+  color:#a855f7;
 }
 
-/* IDEAS */
-.idea{
+.card{
   background:#111;
   border:1px solid #222;
-  padding:12px;
+  padding:14px;
+  border-radius:12px;
   margin:10px 0;
-  border-radius:10px;
-}
-
-.voteBtn{
-  margin-top:10px;
-  width:100%;
-  padding:10px;
-  border-radius:8px;
-  background:#1f1f1f;
-  border:none;
-  color:white;
-  cursor:pointer;
-}
-
-/* TRENDING */
-.trending{
-  border:2px solid gold;
-  box-shadow:0 0 15px rgba(255,215,0,0.2);
 }
 
 /* INPUTS */
 input, button{
   width:100%;
-  max-width:420px;
   padding:12px;
-  margin:6px auto;
-  display:block;
+  margin-top:8px;
   border-radius:10px;
   border:none;
 }
 
 button{
   background:#a855f7;
+  color:white;
+  cursor:pointer;
   font-weight:bold;
 }
 
-/* PHOTOS */
+/* IDEAS */
+.idea{
+  background:#15151c;
+  padding:12px;
+  margin:10px 0;
+  border-radius:10px;
+  border:1px solid #222;
+}
+
+.idea button{
+  width:auto;
+  margin-top:8px;
+}
+
+/* TRENDING */
+.trending{
+  border:2px solid gold;
+}
+
+/* FEED */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:10px;
 }
 
-.photo img{
-  width:100%;
-  aspect-ratio:1/1;
-  object-fit:cover;
-  border-radius:12px;
+.photo{
+  background:#15151c;
+  border-radius:10px;
+  overflow:hidden;
+  border:1px solid #222;
 }
 
-.caption{
-  font-size:13px;
-  padding:6px;
-  color:#ccc;
+.photo img{
+  width:100%;
+  height:160px;
+  object-fit:cover;
+}
+
+small{
+  opacity:0.7;
 }
 </style>
 </head>
 
 <body>
 
-<!-- HERO -->
-<div class="hero">
-  <h1>Mavric for Student Leadership</h1>
-  <div class="slogan">“Your Voice, My Actions.”</div>
-  <div class="badge" id="timer"></div>
+<header>🗳️ Mavric Campaign — “Your Voice, My Actions.”</header>
+
+<div class="section card">
+  <h2>Mission Statement</h2>
+  <p>
+    This campaign is built to give every student a real voice in school decisions.
+    I believe leadership means listening first, then acting on what matters most.
+    Every idea submitted here will be reviewed, considered, and responded to with action.
+    My goal is to create a school environment where students feel heard, respected, and involved in change.
+    Together, we can turn ideas into real improvements that actually happen.
+  </p>
 </div>
 
-<!-- MISSION -->
-<div class="section">
-  <h2>🎯 Mission</h2>
-  <div class="idea">
-    I will listen to students, represent their ideas, and turn feedback into real action.
-    My goal is to improve communication, fairness, and student involvement in school decisions.
-    Every student deserves to be heard and taken seriously.
-    I will make sure ideas don’t just get collected — they get acted on.
-  </div>
+<div class="section card">
+  <h2>⏳ Countdown</h2>
+  <div id="timer"></div>
 </div>
 
-<!-- TRENDING IDEAS -->
-<div class="section">
-  <h2>🔥 Trending Ideas</h2>
-  <div id="trending"></div>
-</div>
-
-<!-- ALL IDEAS -->
-<div class="section">
-  <h2>💡 Student Ideas</h2>
-
-  <input id="ideaInput" placeholder="Submit your idea">
+<div class="section card">
+  <h2>💡 Trending Ideas</h2>
+  <input id="ideaInput" placeholder="Submit your idea..." />
   <button onclick="submitIdea()">Submit Idea</button>
-
-  <div id="ideas"></div>
+  <div id="ideas">Loading...</div>
 </div>
 
-<!-- PHOTO UPLOAD -->
-<div class="section">
-  <h2>📸 Supporter Uploads</h2>
+<div class="section card">
+  <h2>📸 Supporter Feed</h2>
 
-  <input type="file" id="fileInput" multiple accept="image/*">
-  <input id="captionInput" placeholder="Caption (for all images)">
-  <input id="uploadPassword" placeholder="Upload password">
-  <button onclick="uploadPhotos()">Upload (max 25)</button>
+  <input type="password" id="uploadPass" placeholder="Upload password" />
+  <input type="file" id="fileInput" multiple accept="image/*"/>
+  <input id="captionInput" placeholder="Caption (optional)"/>
+  <button onclick="uploadPhotos()">Upload Photos</button>
 
   <div class="feed" id="feed"></div>
 </div>
@@ -172,18 +146,21 @@ button{
 
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
+
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const UPLOAD_PASSWORD = "1234";
-
-const end = new Date("2026-04-24T00:00:00");
+/* CHANGE THIS PASSWORD */
+const UPLOAD_PASSWORD = "mavric2026";
 
 /* TIMER */
+const end = new Date("2026-04-24T00:00:00");
+
 function updateTimer(){
   const diff = end - new Date();
 
   if(diff <= 0){
-    document.getElementById("timer").innerHTML = "🗳️ VOTING DAY IS HERE";
+    document.getElementById("timer").innerHTML =
+      "🗳️ VOTING DAY IS HERE!";
     return;
   }
 
@@ -195,75 +172,65 @@ function updateTimer(){
     `⏳ ${d}d ${h}h ${m}m left`;
 }
 
-/* VOTING LOCK */
-function key(id){
-  return "voted_" + id;
-}
-
+/* VOTING SYSTEM (1 per idea per device) */
 function hasVoted(id){
-  return localStorage.getItem(key(id)) === "true";
+  return localStorage.getItem("vote_" + id);
 }
 
-function markVoted(id){
-  localStorage.setItem(key(id),"true");
+function saveVote(id){
+  localStorage.setItem("vote_" + id, "1");
 }
 
-/* LOAD ALL IDEAS */
+/* LOAD IDEAS */
 async function loadIdeas(){
-  const { data } = await client.from("ideas").select("*");
+  const { data } = await client
+    .from("ideas")
+    .select("*");
+
   if(!data) return;
 
-  // sort for trending
-  const sorted = [...data].sort((a,b)=>(b.votes||0)-(a.votes||0));
+  // sort trending
+  data.sort((a,b)=> (b.votes||0) - (a.votes||0));
 
-  // trending (top 3)
-  document.getElementById("trending").innerHTML =
-    sorted.slice(0,3).map(i => `
-      <div class="idea trending">
-        🔥 ${i.text}<br>
-        🗳️ ${i.votes || 0} votes
-      </div>
-    `).join("");
-
-  // all ideas
   document.getElementById("ideas").innerHTML =
-    data.map(i => `
-      <div class="idea">
-        💡 ${i.text}<br><br>
-        🗳️ ${i.votes || 0} votes
+    data.map(i => {
 
-        <button class="voteBtn" onclick="voteIdea('${i.id}')">
-          ${hasVoted(i.id) ? "Voted ✔" : "Vote"}
-        </button>
-      </div>
-    `).join("");
+      const voted = hasVoted(i.id);
+
+      return `
+        <div class="idea ${i.votes > 5 ? "trending":""}">
+          💡 ${i.text}<br>
+          👍 Votes: ${i.votes || 0}
+
+          <br>
+
+          <button onclick="voteIdea('${i.id}')" ${voted ? "disabled":""}>
+            ${voted ? "Voted ✔" : "Vote"}
+          </button>
+        </div>
+      `;
+    }).join("");
 }
 
 /* VOTE */
 async function voteIdea(id){
 
-  if(hasVoted(id)){
-    alert("You already voted on this idea.");
-    return;
-  }
+  if(hasVoted(id)) return;
 
   const { data } = await client
     .from("ideas")
-    .select("votes")
+    .select("*")
     .eq("id", id)
     .single();
 
-  const newVotes = (data?.votes || 0) + 1;
-
   await client
     .from("ideas")
-    .update({ votes: newVotes })
+    .update({ votes: (data.votes || 0) + 1 })
     .eq("id", id);
 
-  markVoted(id);
+  saveVote(id);
 
   loadIdeas();
-  confetti({particleCount:80, spread:60});
 }
 
 /* SUBMIT IDEA */
@@ -271,35 +238,46 @@ async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({ text, votes:0 });
+  await client.from("ideas").insert({
+    text,
+    votes:0
+  });
 
   document.getElementById("ideaInput").value = "";
+
+  confetti({particleCount:80, spread:60});
   loadIdeas();
 }
 
-/* MULTI UPLOAD (25 MAX) */
+/* UPLOAD MULTIPLE PHOTOS */
 async function uploadPhotos(){
 
-  if(document.getElementById("uploadPassword").value !== UPLOAD_PASSWORD){
-    alert("Wrong password");
+  const pass = document.getElementById("uploadPass").value;
+  if(pass !== UPLOAD_PASSWORD){
+    alert("Wrong upload password");
     return;
   }
 
-  const files = document.getElementById("fileInput").files;
-  const caption = document.getElementById("captionInput").value;
+  const files = fileInput.files;
+  const caption = captionInput.value;
 
   if(!files.length) return;
 
-  const limit = Math.min(files.length, 25);
+  if(files.length > 25){
+    alert("Max 25 photos at once");
+    return;
+  }
 
-  for(let i=0;i<limit;i++){
+  for(let file of files){
 
-    const file = files[i];
     const name = Date.now() + "-" + file.name;
 
-    await client.storage.from("campaign").upload(name, file);
+    await client.storage
+      .from("campaign")
+      .upload(name, file);
 
-    const url = client.storage.from("campaign")
+    const url = client.storage
+      .from("campaign")
       .getPublicUrl(name).data.publicUrl;
 
     await client.from("photos").insert({
@@ -309,20 +287,23 @@ async function uploadPhotos(){
   }
 
   loadPhotos();
-  confetti({particleCount:100, spread:70});
 }
 
 /* LOAD PHOTOS */
 async function loadPhotos(){
-  const { data } = await client.from("photos").select("*");
+  const { data } = await client
+    .from("photos")
+    .select("*");
+
   if(!data) return;
 
-  document.getElementById("feed").innerHTML = data.map(p => `
-    <div class="photo">
-      <img src="${p.url}">
-      <div class="caption">${p.caption || ""}</div>
-    </div>
-  `).join("");
+  document.getElementById("feed").innerHTML =
+    data.map(p => `
+      <div class="photo">
+        <img src="${p.url}">
+        <small>${p.caption || ""}</small>
+      </div>
+    `).join("");
 }
 
 /* INIT */
@@ -331,6 +312,8 @@ loadPhotos();
 updateTimer();
 
 setInterval(updateTimer,1000);
+setInterval(loadIdeas,5000);
+setInterval(loadPhotos,5000);
 
 </script>
 
