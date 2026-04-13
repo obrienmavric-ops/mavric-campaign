@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Mavric Campaign</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,31 +13,50 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0b0b0f;
-  color:white;
+  background:#000;
+  color:#fff;
 }
 
+/* HEADER */
 header{
   position:sticky;
   top:0;
-  padding:14px;
-  text-align:center;
   background:#111;
+  padding:12px;
+  text-align:center;
   color:#a855f7;
   font-weight:bold;
 }
 
+/* SECTIONS */
 .section{
   padding:20px;
   text-align:center;
 }
 
+/* SLOGAN */
+.slogan{
+  font-size:20px;
+  color:#a855f7;
+  margin-top:10px;
+}
+
+/* MISSION */
+.mission{
+  max-width:600px;
+  margin:10px auto;
+  font-size:14px;
+  line-height:1.5;
+  color:#ccc;
+}
+
+/* INPUTS */
 input, button{
   width:90%;
-  max-width:350px;
+  max-width:320px;
   padding:12px;
-  margin:8px auto;
-  border-radius:10px;
+  margin:6px auto;
+  border-radius:8px;
   border:none;
   display:block;
 }
@@ -44,69 +64,86 @@ input, button{
 button{
   background:#a855f7;
   color:white;
-  font-weight:bold;
+  cursor:pointer;
 }
 
-.idea, .photo{
-  background:#151515;
-  padding:12px;
+/* IDEAS */
+.idea{
+  background:#111;
+  border:1px solid #333;
+  padding:10px;
   margin:10px auto;
   max-width:500px;
-  border-radius:12px;
-  border:1px solid #222;
+  border-radius:10px;
 }
 
+/* TIMER */
+#timer{
+  font-size:18px;
+  margin-top:10px;
+  color:#a855f7;
+}
+
+.voting-day{
+  font-size:22px;
+  color:gold;
+  text-shadow:0 0 10px gold;
+}
+
+/* FEED */
 .feed{
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:10px;
 }
 
-.photo img{
-  width:100%;
-  height:140px;
-  object-fit:cover;
+.photo{
+  background:#111;
+  padding:8px;
   border-radius:10px;
 }
 
-#timer{
-  color:#a855f7;
-  font-size:18px;
-}
-
-.voting-day{
-  color:gold;
-  font-size:22px;
-  text-shadow:0 0 10px gold;
+.photo img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  border-radius:8px;
 }
 </style>
 </head>
 
 <body>
 
-<header>🗳️ Mavric Campaign</header>
+<header>🗳️ Mavric Campaign Page</header>
 
 <div class="section">
-  <h2>Your Voice. Your Vote.</h2>
+  <div class="slogan">“Your Voice, My Actions.”</div>
+
+  <div class="mission">
+    This campaign is built to represent real student voices, not promises that disappear after election day.
+    Every idea submitted here will be reviewed and taken seriously, because change starts with listening.
+    My goal is to turn your suggestions into real action that improves school life for everyone.
+    Together, we can build a stronger, more connected school community where every voice matters.
+  </div>
+
   <div id="timer"></div>
 </div>
 
+<!-- IDEAS -->
 <div class="section">
   <h2>💡 Ideas</h2>
   <input id="ideaInput" placeholder="Submit idea">
   <button onclick="submitIdea()">Submit</button>
-  <div id="ideas"></div>
+  <div id="ideas">Loading...</div>
 </div>
 
+<!-- PHOTO UPLOAD -->
 <div class="section">
-  <h2>📸 Photo Feed</h2>
+  <h2>📸 Supporter Feed</h2>
 
-  <input type="file" id="fileInput">
+  <input id="fileInput" type="file">
   <input id="captionInput" placeholder="Caption">
-  
-  <!-- PASSWORD BOX -->
-  <input id="adminPass" type="password" placeholder="Admin password">
-
+  <input id="uploadPassword" type="password" placeholder="Upload password">
   <button onclick="uploadPhoto()">Upload</button>
 
   <div class="feed" id="feed"></div>
@@ -114,29 +151,25 @@ button{
 
 <script>
 
-/* =========================
-   SUPABASE
-========================= */
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
+
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* =========================
-   SIMPLE PASSWORD (CHANGE THIS)
-========================= */
-const ADMIN_PASSWORD = "mavric123";
+// CHANGE THIS PASSWORD IF YOU WANT
+const UPLOAD_PASSWORD = "mavric2026";
 
-/* =========================
-   TIMER
-========================= */
+// COUNTDOWN DATE
 const end = new Date("2026-04-24T00:00:00");
 
+/* TIMER */
 function updateTimer(){
-  const diff = end - new Date();
-  const el = document.getElementById("timer");
+  const now = new Date();
+  const diff = end - now;
 
   if(diff <= 0){
-    el.innerHTML = `<div class="voting-day">🗳️ VOTING DAY IS HERE</div>`;
+    document.getElementById("timer").innerHTML =
+      `<div class="voting-day">🗳️ VOTING DAY IS FRIDAY, APRIL 24TH, 2026</div>`;
     return;
   }
 
@@ -144,24 +177,43 @@ function updateTimer(){
   const h = Math.floor(diff/3600000)%24;
   const m = Math.floor(diff/60000)%60;
 
-  el.innerHTML = `⏳ ${d}d ${h}h ${m}m`;
+  document.getElementById("timer").innerHTML =
+    `⏳ ${d}d ${h}h ${m}m left`;
 }
 
-/* =========================
-   IDEAS
-========================= */
+/* IDEAS */
 async function loadIdeas(){
-  const { data } = await client.from("ideas").select("*");
+  const { data, error } = await client.from("ideas").select("*");
 
-  document.getElementById("ideas").innerHTML =
-    (data || []).map(i => `<div class="idea">💡 ${i.text}</div>`).join("");
+  const el = document.getElementById("ideas");
+
+  if(error){
+    el.innerHTML = "Error: " + error.message;
+    return;
+  }
+
+  if(!data){
+    el.innerHTML = "No ideas yet";
+    return;
+  }
+
+  el.innerHTML = data.map(i => `
+    <div class="idea">
+      💡 ${i.text}<br>
+      🗳️ ${i.votes || 0} votes | ❤️ ${i.likes || 0}
+    </div>
+  `).join("");
 }
 
 async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({ text });
+  await client.from("ideas").insert({
+    text,
+    votes:0,
+    likes:0
+  });
 
   document.getElementById("ideaInput").value = "";
   loadIdeas();
@@ -169,28 +221,28 @@ async function submitIdea(){
   confetti({particleCount:80, spread:60});
 }
 
-/* =========================
-   PHOTO UPLOAD (PASSWORD PROTECTED)
-========================= */
+/* PHOTO UPLOAD (PASSWORD PROTECTED) */
 async function uploadPhoto(){
 
-  const pass = document.getElementById("adminPass").value;
-
-  if(pass !== ADMIN_PASSWORD){
-    alert("Wrong admin password!");
+  const password = document.getElementById("uploadPassword").value;
+  if(password !== UPLOAD_PASSWORD){
+    alert("Incorrect upload password");
     return;
   }
 
-  const file = fileInput.files[0];
-  const caption = captionInput.value;
+  const file = document.getElementById("fileInput").files[0];
+  const caption = document.getElementById("captionInput").value;
 
-  if(!file) return alert("Select a file first");
+  if(!file){
+    alert("No file selected");
+    return;
+  }
 
-  const fileName = Date.now() + "-" + file.name;
+  const name = Date.now() + "-" + file.name;
 
   const { error } = await client.storage
     .from("campaign")
-    .upload(fileName, file);
+    .upload(name, file);
 
   if(error){
     alert(error.message);
@@ -199,33 +251,33 @@ async function uploadPhoto(){
 
   const url = client.storage
     .from("campaign")
-    .getPublicUrl(fileName).data.publicUrl;
+    .getPublicUrl(name).data.publicUrl;
 
   await client.from("photos").insert({
     url,
-    caption
+    caption,
+    likes:0
   });
 
-  fileInput.value = "";
-  captionInput.value = "";
-  document.getElementById("adminPass").value = "";
+  document.getElementById("fileInput").value = "";
+  document.getElementById("captionInput").value = "";
+  document.getElementById("uploadPassword").value = "";
 
   loadPhotos();
 }
 
-/* =========================
-   PHOTOS
-========================= */
+/* PHOTOS */
 async function loadPhotos(){
   const { data } = await client.from("photos").select("*");
 
-  document.getElementById("feed").innerHTML =
-    (data || []).map(p => `
-      <div class="photo">
-        <img src="${p.url}">
-        <div>${p.caption || ""}</div>
-      </div>
-    `).join("");
+  if(!data) return;
+
+  document.getElementById("feed").innerHTML = data.map(p => `
+    <div class="photo">
+      <img src="${p.url}">
+      <div>${p.caption || ""}</div>
+    </div>
+  `).join("");
 }
 
 /* INIT */
@@ -233,9 +285,9 @@ loadIdeas();
 loadPhotos();
 updateTimer();
 
-setInterval(updateTimer, 1000);
-setInterval(loadIdeas, 5000);
-setInterval(loadPhotos, 5000);
+setInterval(updateTimer,1000);
+setInterval(loadIdeas,4000);
+setInterval(loadPhotos,4000);
 
 </script>
 
