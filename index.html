@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mavric Campaign V3</title>
+<title>Mavric Campaign V4</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -12,7 +12,7 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0a0a0a;
+  background:#0b0b0b;
   color:white;
 }
 
@@ -23,27 +23,27 @@ header{
   background:#111;
   padding:14px;
   text-align:center;
-  color:#a855f7;
   font-weight:bold;
-  font-size:18px;
+  color:#a855f7;
   z-index:10;
 }
 
 /* HERO */
 .hero{
-  padding:25px;
   text-align:center;
+  padding:25px 15px;
 }
 .hero h1{
+  margin:0;
   font-size:26px;
-  margin-bottom:5px;
 }
 .slogan{
   color:#a855f7;
   font-weight:bold;
+  margin-top:6px;
 }
 
-/* SECTIONS */
+/* SECTION */
 .section{
   padding:20px;
   text-align:center;
@@ -73,15 +73,14 @@ button:hover{
 /* IDEAS */
 .idea{
   background:#121212;
-  border:1px solid #333;
+  border:1px solid #2a2a2a;
   padding:12px;
   margin:10px auto;
-  max-width:520px;
+  max-width:550px;
   border-radius:12px;
   text-align:left;
 }
 
-/* TRENDING */
 .trending{
   border:1px solid gold;
   box-shadow:0 0 10px gold;
@@ -89,19 +88,26 @@ button:hover{
 
 /* VOTE BUTTON */
 .voteBtn{
+  margin-top:8px;
+  display:inline-block;
   background:#222;
   padding:6px 10px;
   border-radius:8px;
-  display:inline-block;
-  margin-top:6px;
   cursor:pointer;
 }
 
 /* TIMER */
 #timer{
-  font-size:18px;
-  margin-top:10px;
   color:#a855f7;
+  font-size:18px;
+}
+
+/* MISSION */
+.mission{
+  max-width:750px;
+  margin:auto;
+  color:#cfcfcf;
+  line-height:1.6;
 }
 
 /* GALLERY */
@@ -111,27 +117,22 @@ button:hover{
   gap:10px;
 }
 
+/* PHOTO CARD */
 .photo{
   background:#111;
-  padding:8px;
   border-radius:12px;
   overflow:hidden;
+  padding:8px;
 }
 
-/* FIX IMAGE WARP */
+/* ✅ FIXED IMAGE (NO WARP EVER) */
 .photo img{
   width:100%;
-  height:160px;
+  aspect-ratio:4/3;
   object-fit:cover;
+  object-position:center;
   border-radius:10px;
-}
-
-/* mission */
-.mission{
-  max-width:700px;
-  margin:auto;
-  line-height:1.5;
-  color:#ccc;
+  display:block;
 }
 </style>
 </head>
@@ -153,17 +154,17 @@ button:hover{
 <div class="section mission">
   <h2>📌 Mission Statement</h2>
   <p>
-    My mission is to listen to every student voice and turn real ideas into real action.
-    I believe school should reflect the people inside it, not just the system above it.
-    Every idea shared here matters and will be reviewed seriously and fairly.
-    I am committed to transparency, communication, and consistent improvement.
+    My mission is to listen carefully to every student voice and turn real ideas into real action.
+    I believe a school should reflect the students who live in it every day.
+    Every idea submitted here will be reviewed, considered, and treated seriously.
+    I am committed to transparency, consistency, and meaningful improvement.
     Together, we can build a school that actually responds to its students.
   </p>
 </div>
 
 <div class="section">
-  <h2>💡 Student Ideas</h2>
-  <input id="ideaInput" placeholder="Submit idea">
+  <h2>💡 Ideas</h2>
+  <input id="ideaInput" placeholder="Submit your idea">
   <button onclick="submitIdea()">Submit Idea</button>
 
   <h3>🔥 Trending Ideas</h3>
@@ -190,15 +191,13 @@ const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* LOCAL USER ID (for 1 vote per idea) */
+const UPLOAD_PASSWORD = "mavric123";
+
 let userId = localStorage.getItem("userId");
 if(!userId){
   userId = Math.random().toString(36).substring(2);
   localStorage.setItem("userId", userId);
 }
-
-/* PASSWORD */
-const UPLOAD_PASSWORD = "mavric123";
 
 /* COUNTDOWN */
 const end = new Date("2026-04-24T00:00:00");
@@ -207,8 +206,7 @@ function updateTimer(){
   const diff = end - new Date();
 
   if(diff <= 0){
-    document.getElementById("timer").innerHTML =
-    "🗳️ VOTING DAY IS HERE!";
+    document.getElementById("timer").innerHTML = "🗳️ VOTING DAY IS HERE!";
     return;
   }
 
@@ -223,16 +221,15 @@ function updateTimer(){
 /* LOAD IDEAS */
 async function loadIdeas(){
   const { data } = await client.from("ideas").select("*");
-
   if(!data) return;
 
-  let sorted = [...data].sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const sorted = [...data].sort((a,b)=>(b.votes||0)-(a.votes||0));
 
   document.getElementById("trending").innerHTML =
-  sorted.slice(0,3).map(renderIdea).join("");
+    sorted.slice(0,3).map(renderIdea).join("");
 
   document.getElementById("ideas").innerHTML =
-  sorted.map(renderIdea).join("");
+    sorted.map(renderIdea).join("");
 }
 
 /* RENDER IDEA */
@@ -240,7 +237,7 @@ function renderIdea(i){
   return `
   <div class="idea ${i.votes > 5 ? "trending" : ""}">
     💡 ${i.text}<br><br>
-    🗳️ Votes: ${i.votes || 0}<br>
+    🗳️ ${i.votes || 0} votes
 
     <div class="voteBtn" onclick="vote('${i.id}')">
       👍 Vote
@@ -253,7 +250,6 @@ function renderIdea(i){
 async function vote(id){
 
   let voted = JSON.parse(localStorage.getItem("votes") || "{}");
-
   if(voted[id]) return alert("You already voted on this idea!");
 
   const { data } = await client.from("ideas").select("*").eq("id", id).single();
@@ -266,7 +262,6 @@ async function vote(id){
   localStorage.setItem("votes", JSON.stringify(voted));
 
   loadIdeas();
-
   confetti({particleCount:60, spread:70});
 }
 
@@ -275,10 +270,7 @@ async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({
-    text,
-    votes:0
-  });
+  await client.from("ideas").insert({ text, votes:0 });
 
   document.getElementById("ideaInput").value = "";
   loadIdeas();
@@ -286,7 +278,7 @@ async function submitIdea(){
   confetti();
 }
 
-/* UPLOAD PHOTOS (MAX 25) */
+/* PHOTO UPLOAD */
 async function uploadPhoto(){
 
   const pass = document.getElementById("uploadPass").value;
@@ -331,16 +323,15 @@ async function uploadPhoto(){
 /* LOAD PHOTOS */
 async function loadPhotos(){
   const { data } = await client.from("photos").select("*");
-
   if(!data) return;
 
   document.getElementById("feed").innerHTML =
-  data.map(p=>`
-    <div class="photo">
-      <img src="${p.url}">
-      <div>${p.caption || ""}</div>
-    </div>
-  `).join("");
+    data.map(p=>`
+      <div class="photo">
+        <img src="${p.url}">
+        <div>${p.caption || ""}</div>
+      </div>
+    `).join("");
 }
 
 /* INIT */
