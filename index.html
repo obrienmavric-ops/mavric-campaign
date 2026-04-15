@@ -6,11 +6,12 @@
 <title>Mavric Campaign</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
 
 /* =========================
-   GLOBAL (SAFE BASE)
+   BACKGROUND
 ========================= */
 body{
   margin:0;
@@ -20,9 +21,6 @@ body{
   overflow-x:hidden;
 }
 
-/* =========================
-   BACKGROUND (SAFE)
-========================= */
 .bg{
   position:fixed;
   inset:0;
@@ -47,7 +45,6 @@ body{
     radial-gradient(circle at 70% 80%, rgba(255,215,0,0.07), transparent 40%);
 }
 
-/* canvas must NEVER block UI */
 canvas{
   position:fixed;
   inset:0;
@@ -67,6 +64,20 @@ header{
 }
 
 /* =========================
+   HERO
+========================= */
+.hero{
+  text-align:center;
+  padding:30px;
+}
+
+.slogan{
+  color:#a855f7;
+  font-weight:bold;
+  margin-top:6px;
+}
+
+/* =========================
    SECTIONS
 ========================= */
 .section{
@@ -75,24 +86,21 @@ header{
 }
 
 /* =========================
-   BUTTONS
+   INPUTS
 ========================= */
-button{
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#a855f7;
-  color:white;
-  cursor:pointer;
-}
-
-input{
-  padding:10px;
+input, button{
   width:90%;
-  max-width:300px;
+  max-width:350px;
+  padding:10px;
   margin:6px;
   border-radius:8px;
   border:none;
+}
+
+button{
+  background:#a855f7;
+  color:white;
+  cursor:pointer;
 }
 
 /* =========================
@@ -100,15 +108,24 @@ input{
 ========================= */
 .idea{
   background:#111;
+  border:1px solid #333;
   margin:10px auto;
   padding:10px;
   border-radius:10px;
   max-width:500px;
-  border:1px solid #333;
+}
+
+.trending{
+  background:gold;
+  color:black;
+  font-size:12px;
+  padding:3px 6px;
+  border-radius:6px;
+  display:inline-block;
 }
 
 /* =========================
-   PHOTO GRID
+   FEED
 ========================= */
 .feed{
   display:grid;
@@ -123,26 +140,6 @@ input{
   border-radius:8px;
 }
 
-/* =========================
-   SAFE INTRO
-========================= */
-#intro{
-  position:fixed;
-  inset:0;
-  background:#0b0b0f;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-  animation:fade 2s forwards;
-}
-
-@keyframes fade{
-  0%{opacity:1}
-  80%{opacity:1}
-  100%{opacity:0; visibility:hidden}
-}
-
 </style>
 </head>
 
@@ -150,52 +147,169 @@ input{
 
 <div class="bg"></div>
 <div class="glow"></div>
-
 <canvas id="c"></canvas>
-
-<div id="intro">
-  <div style="text-align:center">
-    <h1 style="color:#a855f7">Mavric Campaign</h1>
-    <p>Your Voice, My Actions.</p>
-  </div>
-</div>
 
 <header>Mavric Campaign Page</header>
 
+<!-- HERO -->
+<div class="hero">
+  <h1>Leadership That Listens</h1>
+  <div class="slogan">Your Voice, My Actions.</div>
+  <p>
+    I believe in turning student ideas into real action. Not promises — results.
+    Every student deserves a voice that is heard and acted on.
+  </p>
+</div>
+
+<!-- TIMER -->
 <div class="section">
   <h2>Countdown</h2>
   <div id="timer"></div>
 </div>
 
+<!-- IDEAS -->
 <div class="section">
-  <h2>Ideas</h2>
+  <h2>Trending Ideas</h2>
   <input id="ideaInput" placeholder="Idea"/>
-  <button onclick="addIdea()">Post</button>
-  <div id="ideas">Loading...</div>
+  <button onclick="addIdea()">Post Idea</button>
+  <div id="ideas"></div>
 </div>
 
+<!-- UPLOAD -->
 <div class="section">
-  <h2>Photos</h2>
-  <input type="file" id="file">
+  <h2>Upload Photos</h2>
+  <input type="file" id="files" multiple>
   <input id="caption" placeholder="Caption">
-  <button onclick="upload()">Upload</button>
+  <button onclick="upload()">Upload (max 25)</button>
   <div class="feed" id="feed"></div>
 </div>
 
 <script>
 
 /* =========================
-   SAFE SUPABASE INIT
+   SUPABASE
 ========================= */
-let client=null;
+const client = supabase.createClient(
+  "https://didfhlfvdvurkfwbipli.supabase.co",
+  "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+);
 
-try{
-  client = supabase.createClient(
-    "https://didfhlfvdvurkfwbipli.supabase.co",
-    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-  );
-}catch(e){
-  console.log("Supabase failed but site still works");
+/* =========================
+   PASSWORD
+========================= */
+const UPLOAD_PASSWORD = "mavric123";
+
+/* =========================
+   VOTING (1 per idea)
+========================= */
+function voted(id){
+  return localStorage.getItem("v_"+id)==="1";
+}
+
+function mark(id){
+  localStorage.setItem("v_"+id,"1");
+}
+
+async function vote(id,votes){
+
+  if(voted(id)){
+    alert("Already voted");
+    return;
+  }
+
+  await client.from("ideas")
+    .update({votes:votes+1})
+    .eq("id",id);
+
+  mark(id);
+  loadIdeas();
+}
+
+/* =========================
+   IDEAS
+========================= */
+async function loadIdeas(){
+  const {data}=await client.from("ideas").select("*");
+  if(!data) return;
+
+  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+
+  document.getElementById("ideas").innerHTML=
+  sorted.map((i,index)=>`
+    <div class="idea">
+      ${index===0?`<div class="trending">🔥 #1 Trending</div>`:""}
+      💡 ${i.text}<br>
+      🗳️ ${i.votes||0}
+      <button onclick="vote('${i.id}',${i.votes||0})"
+        ${voted(i.id)?"disabled":""}>
+        Vote
+      </button>
+    </div>
+  `).join("");
+}
+
+/* =========================
+   ADD IDEA
+========================= */
+async function addIdea(){
+  const text=document.getElementById("ideaInput").value;
+  if(!text) return;
+
+  await client.from("ideas").insert({text,votes:0});
+  document.getElementById("ideaInput").value="";
+  loadIdeas();
+}
+
+/* =========================
+   UPLOAD (PASSWORD + 25 FILES)
+========================= */
+async function upload(){
+
+  const pw=prompt("Upload password:");
+  if(pw!==UPLOAD_PASSWORD){
+    alert("Wrong password");
+    return;
+  }
+
+  const files=document.getElementById("files").files;
+  const caption=document.getElementById("caption").value;
+
+  if(!files.length) return;
+
+  const limit=Math.min(files.length,25);
+
+  for(let i=0;i<limit;i++){
+
+    const file=files[i];
+    const name=Date.now()+"-"+file.name;
+
+    await client.storage.from("campaign").upload(name,file);
+
+    const url=client.storage.from("campaign")
+      .getPublicUrl(name).data.publicUrl;
+
+    await client.from("photos").insert({
+      url,
+      caption
+    });
+  }
+
+  loadPhotos();
+}
+
+/* =========================
+   PHOTOS
+========================= */
+async function loadPhotos(){
+  const {data}=await client.from("photos").select("*");
+  if(!data) return;
+
+  document.getElementById("feed").innerHTML=
+  data.map(p=>`
+    <div class="photo">
+      <img src="${p.url}">
+    </div>
+  `).join("");
 }
 
 /* =========================
@@ -207,154 +321,60 @@ function timer(){
   const diff=end-new Date();
   const el=document.getElementById("timer");
 
-  if(diff<=0){
-    el.innerHTML="VOTING DAY";
-    return;
-  }
-
   const d=Math.floor(diff/86400000);
-  el.innerHTML=d+" days left";
+  el.innerHTML=d>0?d+" days left":"VOTING DAY";
 }
 
 /* =========================
-   IDEAS SAFE LOAD
+   PARTICLES (SAFE)
 ========================= */
-async function loadIdeas(){
-  try{
-    if(!client) return;
+const c=document.getElementById("c");
+const x=c.getContext("2d");
 
-    const {data}=await client.from("ideas").select("*");
-    if(!data) return;
+c.width=innerWidth;
+c.height=innerHeight;
 
-    document.getElementById("ideas").innerHTML=
-      data.map(i=>`
-        <div class="idea">
-          💡 ${i.text} <br>
-          🗳️ ${i.votes||0}
-        </div>
-      `).join("");
+let p=[];
 
-  }catch(e){
-    document.getElementById("ideas").innerHTML="Ideas offline";
-  }
-}
-
-async function addIdea(){
-  const text=document.getElementById("ideaInput").value;
-  if(!text || !client) return;
-
-  await client.from("ideas").insert({text,votes:0});
-  document.getElementById("ideaInput").value="";
-  loadIdeas();
-}
-
-/* =========================
-   PHOTO SAFE
-========================= */
-async function upload(){
-  try{
-    if(!client) return;
-
-    const file=document.getElementById("file").files[0];
-    const caption=document.getElementById("caption").value;
-    if(!file) return;
-
-    const name=Date.now()+"-"+file.name;
-
-    await client.storage.from("campaign").upload(name,file);
-
-    const url=client.storage.from("campaign")
-      .getPublicUrl(name).data.publicUrl;
-
-    await client.from("photos").insert({url,caption});
-
-    loadPhotos();
-
-  }catch(e){
-    alert("Upload failed");
-  }
-}
-
-async function loadPhotos(){
-  try{
-    if(!client) return;
-
-    const {data}=await client.from("photos").select("*");
-    if(!data) return;
-
-    document.getElementById("feed").innerHTML=
-      data.map(p=>`
-        <div class="photo">
-          <img src="${p.url}">
-        </div>
-      `).join("");
-
-  }catch(e){}
-}
-
-/* =========================
-   PARTICLES SAFE (NO CRASH)
-========================= */
-const canvas=document.getElementById("c");
-const ctx=canvas.getContext("2d");
-
-function resize(){
-  canvas.width=window.innerWidth;
-  canvas.height=window.innerHeight;
-}
-resize();
-window.addEventListener("resize",resize);
-
-let particles=[];
-
-for(let i=0;i<40;i++){
-  particles.push({
-    x:Math.random()*canvas.width,
-    y:Math.random()*canvas.height,
+for(let i=0;i<50;i++){
+  p.push({
+    x:Math.random()*c.width,
+    y:Math.random()*c.height,
     r:Math.random()*2,
-    dx:(Math.random()-0.5)*0.3,
-    dy:(Math.random()-0.5)*0.3
+    dx:(Math.random()-0.5)*0.4,
+    dy:(Math.random()-0.5)*0.4
   });
 }
 
-function animate(){
-  try{
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+function anim(){
+  x.clearRect(0,0,c.width,c.height);
 
-    for(let p of particles){
-      ctx.beginPath();
-      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle="rgba(168,85,247,0.4)";
-      ctx.fill();
+  for(let i of p){
+    x.beginPath();
+    x.arc(i.x,i.y,i.r,0,Math.PI*2);
+    x.fillStyle="rgba(168,85,247,0.4)";
+    x.fill();
 
-      p.x+=p.dx;
-      p.y+=p.dy;
+    i.x+=i.dx;
+    i.y+=i.dy;
 
-      if(p.x<0||p.x>canvas.width) p.dx*=-1;
-      if(p.y<0||p.y>canvas.height) p.dy*=-1;
-    }
-  }catch(e){}
+    if(i.x<0||i.x>c.width) i.dx*=-1;
+    if(i.y<0||i.y>c.height) i.dy*=-1;
+  }
 
-  requestAnimationFrame(animate);
+  requestAnimationFrame(anim);
 }
 
-animate();
+anim();
 
 /* =========================
-   INIT SAFE ORDER
+   INIT
 ========================= */
-timer();
 loadIdeas();
 loadPhotos();
+timer();
 
 setInterval(timer,1000);
-setInterval(loadIdeas,4000);
-setInterval(loadPhotos,5000);
-
-setTimeout(()=>{
-  const i=document.getElementById("intro");
-  if(i) i.remove();
-},2000);
 
 </script>
 
