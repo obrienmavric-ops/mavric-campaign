@@ -11,8 +11,8 @@
 <style>
 body{
   margin:0;
-  font-family:Arial;
-  background:#0b0b0b;
+  font-family: 'Arial', sans-serif;
+  background: radial-gradient(circle at top, #1a1a1a, #0b0b0b 60%);
   color:white;
 }
 
@@ -20,119 +20,172 @@ body{
 header{
   position:sticky;
   top:0;
-  background:#111;
-  padding:14px;
+  background:rgba(17,17,17,0.85);
+  backdrop-filter: blur(10px);
+  padding:16px;
   text-align:center;
-  font-weight:bold;
+  font-weight:800;
+  letter-spacing:1px;
   color:#a855f7;
   z-index:10;
+  border-bottom:1px solid #2a2a2a;
 }
 
 /* HERO */
 .hero{
   text-align:center;
-  padding:25px 15px;
+  padding:40px 15px 20px;
 }
 .hero h1{
+  font-size:34px;
   margin:0;
-  font-size:26px;
+  font-weight:900;
 }
 .slogan{
-  color:#a855f7;
-  font-weight:bold;
-  margin-top:6px;
+  margin-top:10px;
+  font-size:16px;
+  color:#c084fc;
+  opacity:0.9;
 }
 
-/* SECTION */
+/* SECTIONS */
 .section{
-  padding:20px;
+  padding:25px 15px;
   text-align:center;
+}
+
+/* HEADERS */
+h2{
+  font-size:20px;
+  margin-bottom:12px;
+  color:#e9d5ff;
 }
 
 /* INPUTS */
 input, button{
-  width:90%;
-  max-width:360px;
-  padding:12px;
-  margin:6px auto;
-  border-radius:10px;
+  width:92%;
+  max-width:420px;
+  padding:14px;
+  margin:8px auto;
+  border-radius:12px;
   border:none;
   display:block;
+  font-size:14px;
+}
+
+input{
+  background:#151515;
+  color:white;
+  border:1px solid #2a2a2a;
 }
 
 button{
-  background:#a855f7;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
   color:white;
   cursor:pointer;
-  transition:0.2s;
+  font-weight:bold;
+  transition:0.2s ease;
 }
+
 button:hover{
   transform:scale(1.03);
+  box-shadow:0 0 15px rgba(168,85,247,0.4);
+}
+
+/* MISSION BOX */
+.mission{
+  max-width:800px;
+  margin:auto;
+  color:#d1d1d1;
+  line-height:1.7;
+  background:#111;
+  border:1px solid #2a2a2a;
+  border-radius:14px;
+  padding:20px;
 }
 
 /* IDEAS */
 .idea{
-  background:#121212;
+  background: linear-gradient(145deg, #121212, #0f0f0f);
   border:1px solid #2a2a2a;
-  padding:12px;
-  margin:10px auto;
-  max-width:550px;
-  border-radius:12px;
+  padding:14px;
+  margin:12px auto;
+  max-width:600px;
+  border-radius:14px;
   text-align:left;
+  transition:0.2s;
+}
+
+.idea:hover{
+  transform:translateY(-2px);
+  border-color:#a855f7;
 }
 
 .trending{
   border:1px solid gold;
-  box-shadow:0 0 10px gold;
+  box-shadow:0 0 12px rgba(255,215,0,0.2);
 }
 
 /* VOTE BUTTON */
 .voteBtn{
-  margin-top:8px;
+  margin-top:10px;
   display:inline-block;
   background:#222;
-  padding:6px 10px;
-  border-radius:8px;
+  padding:6px 12px;
+  border-radius:10px;
   cursor:pointer;
+  font-size:13px;
 }
 
 /* TIMER */
 #timer{
-  color:#a855f7;
-  font-size:18px;
-}
-
-/* MISSION */
-.mission{
-  max-width:750px;
-  margin:auto;
-  color:#cfcfcf;
-  line-height:1.6;
+  color:#c084fc;
+  font-size:20px;
+  font-weight:bold;
 }
 
 /* GALLERY */
 .feed{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  max-width:900px;
+  margin:auto;
 }
 
 /* PHOTO CARD */
 .photo{
   background:#111;
-  border-radius:12px;
+  border-radius:14px;
   overflow:hidden;
-  padding:8px;
+  border:1px solid #2a2a2a;
+  transition:0.2s;
 }
 
-/* ✅ FIXED IMAGE (NO WARP EVER) */
+.photo:hover{
+  transform:scale(1.02);
+}
+
+/* FIXED IMAGE (CLEAN + NO WARP) */
 .photo img{
   width:100%;
-  aspect-ratio:4/3;
+  aspect-ratio:1/1;
   object-fit:cover;
   object-position:center;
-  border-radius:10px;
   display:block;
+}
+
+.photo div{
+  padding:8px;
+  font-size:12px;
+  color:#cfcfcf;
+}
+
+/* MOBILE POLISH */
+@media (max-width:600px){
+  .hero h1{
+    font-size:26px;
+  }
 }
 </style>
 </head>
