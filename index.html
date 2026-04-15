@@ -44,6 +44,60 @@ header{
 }
 
 /* =========================
+   HERO (NEW RESTORED SECTION)
+========================= */
+.hero{
+  padding:40px 20px;
+  text-align:center;
+
+  animation: fadeUp 1s ease forwards;
+}
+
+.hero h1{
+  font-size:28px;
+  margin-bottom:10px;
+}
+
+.hero p{
+  opacity:0.9;
+  max-width:700px;
+  margin:auto;
+  line-height:1.5;
+}
+
+.slogan{
+  margin-top:10px;
+  font-size:18px;
+  color:#a855f7;
+  font-weight:700;
+}
+
+/* =========================
+   ANIMATIONS
+========================= */
+@keyframes fadeUp{
+  from{
+    opacity:0;
+    transform:translateY(20px);
+  }
+  to{
+    opacity:1;
+    transform:translateY(0);
+  }
+}
+
+.reveal{
+  opacity:0;
+  transform:translateY(30px);
+  transition:0.8s ease;
+}
+
+.reveal.active{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* =========================
    SECTIONS
 ========================= */
 .section{
@@ -128,7 +182,6 @@ button:hover{
   overflow:hidden;
 }
 
-/* FIX IMAGE STRETCH */
 .photo img{
   width:100%;
   height:160px;
@@ -147,22 +200,37 @@ button:hover{
 
 <header>🗳️ Mavric Campaign Page</header>
 
-<!-- HERO -->
-<div class="section">
-  <h2>Your Voice. Your Vote.</h2>
+<!-- HERO SECTION (RESTORED) -->
+<div class="hero reveal">
+  <h1>Mavric for Student Leadership</h1>
+
+  <div class="slogan">
+    “Your Voice, My Actions.”
+  </div>
+
+  <p>
+    I believe student leadership should be built on real action, real listening, and real change.
+    This campaign is about turning student ideas into results, not promises. Together, we can create
+    a school environment where every voice matters and every idea has a chance to become reality.
+  </p>
+</div>
+
+<!-- TIMER -->
+<div class="section reveal">
+  <h2>⏳ Countdown to Voting Day</h2>
   <div id="timer"></div>
 </div>
 
 <!-- IDEAS -->
-<div class="section">
-  <h2>💡 Ideas</h2>
+<div class="section reveal">
+  <h2>💡 Trending Ideas</h2>
   <input id="ideaInput" placeholder="Submit idea"/>
   <button onclick="submitIdea()">Submit</button>
   <div id="ideas">Loading...</div>
 </div>
 
-<!-- PHOTO UPLOAD -->
-<div class="section">
+<!-- PHOTO FEED -->
+<div class="section reveal">
   <h2>📸 Supporter Feed</h2>
   <input type="file" id="fileInput" multiple />
   <input id="captionInput" placeholder="Caption"/>
@@ -222,7 +290,7 @@ async function loadIdeas(){
   }
 
   el.innerHTML = data.map(i => `
-    <div class="idea">
+    <div class="idea reveal">
       💡 ${i.text}<br>
       🗳️ ${i.votes || 0} votes | ❤️ ${i.likes || 0}
     </div>
@@ -284,7 +352,7 @@ async function loadPhotos(){
   if(!data) return;
 
   document.getElementById("feed").innerHTML = data.map(p => `
-    <div class="photo">
+    <div class="photo reveal">
       <img src="${p.url}">
       <div>${p.caption || ""}</div>
     </div>
@@ -292,11 +360,27 @@ async function loadPhotos(){
 }
 
 /* =========================
+   SCROLL REVEAL
+========================= */
+function reveal(){
+  const elements = document.querySelectorAll(".reveal");
+  elements.forEach(el => {
+    const top = el.getBoundingClientRect().top;
+    if(top < window.innerHeight - 80){
+      el.classList.add("active");
+    }
+  });
+}
+
+window.addEventListener("scroll", reveal);
+
+/* =========================
    INIT
 ========================= */
 loadIdeas();
 loadPhotos();
 updateTimer();
+reveal();
 
 setInterval(updateTimer,1000);
 setInterval(loadIdeas,3000);
