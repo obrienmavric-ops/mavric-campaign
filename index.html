@@ -9,259 +9,250 @@
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
-body{
+<style>
+/* =========================
+   🌌 GLOBAL RESET + THEME
+========================= */
+*{
   margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  color:white;
-  background:
-    radial-gradient(circle at 20% 0%, #2b0a4a, transparent 40%),
-    radial-gradient(circle at 80% 20%, #1b1b3a, transparent 45%),
-    radial-gradient(circle at bottom, #0b0b0f, #050508);
-  min-height:100vh;
+  padding:0;
+  box-sizing:border-box;
 }
 
-/* HEADER (glass effect) */
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  color:white;
+  overflow-x:hidden;
+
+  /* animated gradient background */
+  background: linear-gradient(-45deg, #0a0a0a, #111827, #1e1b4b, #0f172a);
+  background-size: 400% 400%;
+  animation: gradientShift 18s ease infinite;
+}
+
+@keyframes gradientShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+/* =========================
+   🧠 HEADER (CLEAN + PREMIUM)
+========================= */
 header{
   position:sticky;
   top:0;
-  z-index:10;
+  z-index:100;
+
+  background: rgba(10,10,10,0.75);
+  backdrop-filter: blur(12px);
+
   padding:14px;
   text-align:center;
-  font-weight:800;
-  letter-spacing:1.2px;
-  color:#c084fc;
-  background:rgba(10,10,20,0.6);
-  backdrop-filter: blur(14px);
+
+  font-weight:700;
+  letter-spacing:1px;
+
   border-bottom:1px solid rgba(255,255,255,0.08);
 }
 
-/* HERO */
-.hero{
-  padding:60px 20px 20px;
-  text-align:center;
-}
-
-.hero h1{
-  font-size:42px;
-  margin:0;
-  font-weight:900;
-  background: linear-gradient(90deg, #a855f7, #60a5fa);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.slogan{
-  margin-top:10px;
-  font-size:16px;
-  color:#d8b4fe;
-  opacity:0.9;
-}
-
-/* SECTION */
+/* =========================
+   📦 LAYOUT SECTIONS
+========================= */
 .section{
-  padding:30px 18px;
+  padding:28px 18px;
+  max-width:900px;
+  margin:auto;
   text-align:center;
 }
 
-/* TITLES */
+/* section headings */
 h2{
+  margin-bottom:12px;
   font-size:22px;
-  margin-bottom:14px;
-  color:#e9d5ff;
 }
 
-/* INPUTS */
-input, button{
-  width:92%;
-  max-width:440px;
-  padding:14px;
-  margin:10px auto;
-  border-radius:14px;
-  border:none;
-  display:block;
-  font-size:14px;
-  outline:none;
-}
+/* =========================
+   🎬 HERO INTRO SECTION
+========================= */
+.hero{
+  margin-top:20px;
+  padding:40px 20px;
 
-input{
-  background:rgba(20,20,30,0.7);
+  background: rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.08);
-  color:white;
+  border-radius:18px;
+
   backdrop-filter: blur(10px);
+
+  animation: fadeUp 1s ease forwards;
+}
+
+@keyframes fadeUp{
+  from{
+    opacity:0;
+    transform: translateY(20px);
+  }
+  to{
+    opacity:1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   ⏳ TIMER (BIG IMPACT)
+========================= */
+#timer{
+  font-size:20px;
+  margin-top:10px;
+  color:#a855f7;
+  font-weight:600;
+}
+
+.voting-day{
+  font-size:26px;
+  font-weight:800;
+  color:#facc15;
+  text-shadow:0 0 20px rgba(250,204,21,0.6);
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.05)}
+  100%{transform:scale(1)}
+}
+
+/* =========================
+   ✨ INPUT SYSTEM (MODERN)
+========================= */
+input, button{
+  width:100%;
+  max-width:360px;
+  padding:12px 14px;
+  margin:8px auto;
+
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.08);
+
+  display:block;
+
+  background: rgba(255,255,255,0.05);
+  color:white;
+
+  outline:none;
 }
 
 input:focus{
   border-color:#a855f7;
-  box-shadow:0 0 0 2px rgba(168,85,247,0.2);
 }
 
 button{
-  background: linear-gradient(135deg, #a855f7, #4f46e5);
-  color:white;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  font-weight:600;
   cursor:pointer;
-  font-weight:700;
   transition:0.2s ease;
 }
 
 button:hover{
-  transform: translateY(-2px);
-  box-shadow:0 10px 25px rgba(168,85,247,0.25);
+  transform: scale(1.03);
 }
 
-/* MISSION BOX */
-.mission{
-  max-width:850px;
-  margin:auto;
-  padding:22px;
-  border-radius:16px;
-  background:rgba(15,15,25,0.6);
-  border:1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(10px);
-  color:#d1d5db;
-  line-height:1.7;
-}
-
-/* TIMER */
-#timer{
-  font-size:22px;
-  font-weight:800;
-  color:#c084fc;
-}
-
-/* IDEAS */
+/* =========================
+   💡 IDEA CARDS (CLEAN + SHARP)
+========================= */
 .idea{
-  max-width:650px;
-  margin:12px auto;
-  padding:16px;
-  border-radius:16px;
-  text-align:left;
-  background:rgba(15,15,25,0.65);
+  background: rgba(255,255,255,0.04);
   border:1px solid rgba(255,255,255,0.08);
+
+  padding:14px;
+  margin:12px auto;
+
+  max-width:520px;
+  border-radius:14px;
+
+  text-align:left;
+
   transition:0.2s ease;
 }
 
 .idea:hover{
   transform: translateY(-3px);
-  border-color:#a855f7;
+  border-color: rgba(168,85,247,0.5);
 }
 
-/* TRENDING IDEA */
-.trending{
-  border:1px solid gold;
-  box-shadow:0 0 18px rgba(255,215,0,0.15);
-}
-
-/* VOTE BUTTON */
-.voteBtn{
-  margin-top:10px;
-  display:inline-block;
-  background:rgba(255,255,255,0.08);
-  padding:7px 12px;
-  border-radius:12px;
-  cursor:pointer;
-  font-size:13px;
-  transition:0.2s;
-}
-
-.voteBtn:hover{
-  background:rgba(168,85,247,0.2);
-}
-
-/* GALLERY */
+/* =========================
+   📸 IMAGE FEED (NO STRETCHING EVER)
+========================= */
 .feed{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
-  gap:14px;
-  max-width:900px;
-  margin:auto;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap:12px;
 }
 
-/* PHOTO CARD */
 .photo{
-  border-radius:16px;
+  background: rgba(255,255,255,0.04);
+  border-radius:14px;
   overflow:hidden;
-  background:rgba(15,15,25,0.7);
+
   border:1px solid rgba(255,255,255,0.08);
-  transition:0.25s ease;
 }
 
-.photo:hover{
-  transform: scale(1.03);
-}
-
-/* FIX IMAGE (NO STRETCH EVER) */
+/* FIX: NO WARP / NO STRETCH */
 .photo img{
   width:100%;
-  aspect-ratio:1/1;
+  height:180px;
   object-fit:cover;
-  object-position:center;
   display:block;
 }
 
-/* CAPTION */
 .photo div{
-  padding:10px;
-  font-size:12px;
-  color:#d1d5db;
+  padding:8px;
+  font-size:13px;
+  opacity:0.9;
 }
 
-/* MOBILE */
+/* =========================
+   🔢 LIVE COUNTER STYLE
+========================= */
+.counter{
+  font-weight:800;
+  color:#a855f7;
+  transition:0.2s ease;
+}
+
+.counter.bump{
+  transform: scale(1.3);
+  color:#60a5fa;
+}
+
+/* =========================
+   👀 SCROLL REVEAL SYSTEM
+========================= */
+.reveal{
+  opacity:0;
+  transform: translateY(35px);
+  transition: all 0.8s ease;
+}
+
+.reveal.active{
+  opacity:1;
+  transform: translateY(0);
+}
+
+/* =========================
+   📱 MOBILE POLISH
+========================= */
 @media (max-width:600px){
-  .hero h1{
-    font-size:30px;
+  .section{
+    padding:20px 12px;
+  }
+
+  header{
+    font-size:14px;
   }
 }
 </style>
-</head>
-
-<body>
-
-<header>🗳️ MAVRIC'S CAMPAIGN PAGE</header>
-
-<div class="hero">
-  <h1>Your Voice. My Actions.</h1>
-  <div class="slogan">“Your voice, My Actions.”</div>
-</div>
-
-<div class="section">
-  <h2>⏳ Countdown to Voting Day</h2>
-  <div id="timer"></div>
-</div>
-
-<div class="section mission">
-  <h2>📌 Mission Statement</h2>
-  <p>
-    My mission is to listen carefully to every student voice and turn real ideas into real action.
-    I believe a school should reflect the students who live in it every day.
-    Every idea submitted here will be reviewed, considered, and treated seriously.
-    I am committed to transparency, consistency, and meaningful improvement.
-    Together, we can build a school that actually responds to its students.
-  </p>
-</div>
-
-<div class="section">
-  <h2>💡 Ideas</h2>
-  <input id="ideaInput" placeholder="Submit your idea">
-  <button onclick="submitIdea()">Submit Idea</button>
-
-  <h3>🔥 Trending Ideas</h3>
-  <div id="trending"></div>
-
-  <h3>All Ideas</h3>
-  <div id="ideas"></div>
-</div>
-
-<div class="section">
-  <h2>📸 Supporter Feed</h2>
-
-  <input type="password" id="uploadPass" placeholder="Upload password">
-  <input type="file" id="fileInput" multiple accept="image/*">
-  <input id="captionInput" placeholder="Caption">
-  <button onclick="uploadPhoto()">Upload (max 25)</button>
-
-  <div class="feed" id="feed"></div>
-</div>
-
 <script>
 
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
