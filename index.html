@@ -21,8 +21,39 @@
 
 body{
   font-family: Arial, sans-serif;
-  color:white;
   background:#0b0b0f;
+  color:white;
+  overflow-x:hidden;
+}
+
+/* =========================
+   INTRO (APPLE STYLE)
+========================= */
+#intro{
+  position:fixed;
+  inset:0;
+  background:#0b0b0f;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  animation: introFade 2.5s ease forwards;
+}
+
+#intro h1{
+  font-size:40px;
+  color:#a855f7;
+}
+
+#intro p{
+  margin-top:10px;
+  opacity:0.8;
+}
+
+@keyframes introFade{
+  0%{opacity:1}
+  80%{opacity:1}
+  100%{opacity:0; visibility:hidden}
 }
 
 /* =========================
@@ -32,69 +63,43 @@ header{
   position:sticky;
   top:0;
   z-index:10;
-
   background:#111;
   padding:14px;
   text-align:center;
-
   color:#a855f7;
   font-weight:800;
-
   border-bottom:1px solid #333;
 }
 
 /* =========================
-   HERO (NEW RESTORED SECTION)
+   HERO
 ========================= */
 .hero{
-  padding:40px 20px;
   text-align:center;
-
-  animation: fadeUp 1s ease forwards;
+  padding:40px 20px;
+  animation: fadeUp 1s ease;
 }
 
 .hero h1{
   font-size:28px;
-  margin-bottom:10px;
-}
-
-.hero p{
-  opacity:0.9;
-  max-width:700px;
-  margin:auto;
-  line-height:1.5;
 }
 
 .slogan{
-  margin-top:10px;
-  font-size:18px;
+  margin-top:8px;
   color:#a855f7;
-  font-weight:700;
+  font-weight:bold;
 }
 
-/* =========================
-   ANIMATIONS
-========================= */
+.hero p{
+  max-width:700px;
+  margin:12px auto;
+  opacity:0.85;
+  line-height:1.5;
+}
+
 @keyframes fadeUp{
-  from{
-    opacity:0;
-    transform:translateY(20px);
-  }
-  to{
-    opacity:1;
-    transform:translateY(0);
-  }
-}
-
-.reveal{
-  opacity:0;
-  transform:translateY(30px);
-  transition:0.8s ease;
-}
-
-.reveal.active{
-  opacity:1;
-  transform:translateY(0);
+  from{opacity:0; transform:translateY(20px)}
+  to{opacity:1; transform:translateY(0)}
 }
 
 /* =========================
@@ -108,14 +113,13 @@ header{
 }
 
 /* =========================
-   INPUTS + BUTTONS
+   INPUTS
 ========================= */
 input, button{
   width:92%;
   max-width:360px;
   padding:12px;
   margin:8px auto;
-
   display:block;
   border-radius:10px;
   border:none;
@@ -132,10 +136,6 @@ button{
   color:white;
   font-weight:bold;
   cursor:pointer;
-}
-
-button:hover{
-  opacity:0.9;
 }
 
 /* =========================
@@ -166,6 +166,27 @@ button:hover{
   text-align:left;
 }
 
+.trending{
+  display:inline-block;
+  background:gold;
+  color:black;
+  font-size:12px;
+  font-weight:bold;
+  padding:3px 6px;
+  border-radius:6px;
+  margin-bottom:6px;
+}
+
+.vote-pop{
+  animation: pop 0.4s ease;
+}
+
+@keyframes pop{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.2); color:gold}
+  100%{transform:scale(1)}
+}
+
 /* =========================
    FEED
 ========================= */
@@ -186,32 +207,51 @@ button:hover{
   width:100%;
   height:160px;
   object-fit:cover;
-  display:block;
 }
 
 .photo div{
   padding:8px;
   font-size:13px;
 }
+
+/* =========================
+   REVEAL ANIMATION
+========================= */
+.reveal{
+  opacity:0;
+  transform:translateY(20px);
+  transition:0.8s ease;
+}
+
+.reveal.active{
+  opacity:1;
+  transform:translateY(0);
+}
 </style>
 </head>
 
 <body>
 
+<!-- INTRO -->
+<div id="intro">
+  <div style="text-align:center">
+    <h1>Mavric Campaign</h1>
+    <p>Your Voice, My Actions.</p>
+  </div>
+</div>
+
 <header>🗳️ Mavric Campaign Page</header>
 
-<!-- HERO SECTION (RESTORED) -->
+<!-- HERO -->
 <div class="hero reveal">
-  <h1>Mavric for Student Leadership</h1>
+  <h1>Leadership That Listens</h1>
 
-  <div class="slogan">
-    “Your Voice, My Actions.”
-  </div>
+  <div class="slogan">“Your Voice, My Actions.”</div>
 
   <p>
-    I believe student leadership should be built on real action, real listening, and real change.
-    This campaign is about turning student ideas into results, not promises. Together, we can create
-    a school environment where every voice matters and every idea has a chance to become reality.
+    I believe student leadership should turn ideas into real action. This campaign is built on listening,
+    improving school life, and making sure every student has a voice that actually matters.
+    Together, we can build something better — not just promises, but results.
   </p>
 </div>
 
@@ -223,16 +263,16 @@ button:hover{
 
 <!-- IDEAS -->
 <div class="section reveal">
-  <h2>💡 Trending Ideas</h2>
+  <h2>🔥 Trending Ideas</h2>
   <input id="ideaInput" placeholder="Submit idea"/>
   <button onclick="submitIdea()">Submit</button>
   <div id="ideas">Loading...</div>
 </div>
 
-<!-- PHOTO FEED -->
+<!-- FEED -->
 <div class="section reveal">
   <h2>📸 Supporter Feed</h2>
-  <input type="file" id="fileInput" multiple />
+  <input type="file" id="fileInput"/>
   <input id="captionInput" placeholder="Caption"/>
   <button onclick="uploadPhoto()">Upload</button>
   <div class="feed" id="feed"></div>
@@ -247,6 +287,14 @@ const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =========================
+   INTRO REMOVE
+========================= */
+setTimeout(() => {
+  const intro = document.getElementById("intro");
+  if(intro) intro.remove();
+}, 2500);
 
 /* =========================
    TIMER
@@ -272,45 +320,62 @@ function updateTimer(){
 }
 
 /* =========================
-   IDEAS
+   IDEAS (TRENDING + VOTES)
 ========================= */
 async function loadIdeas(){
-  const { data, error } = await client.from("ideas").select("*");
+  const { data } = await client.from("ideas").select("*");
 
-  const el = document.getElementById("ideas");
+  if(!data) return;
 
-  if(error){
-    el.innerHTML = error.message;
-    return;
-  }
+  const sorted = data.sort((a,b)=> (b.votes||0)-(a.votes||0));
 
-  if(!data){
-    el.innerHTML = "No ideas yet";
-    return;
-  }
+  document.getElementById("ideas").innerHTML =
+    sorted.map((i,index)=>`
+      <div class="idea">
+        ${index===0 ? `<div class="trending">🔥 #1 Trending</div>` : ""}
 
-  el.innerHTML = data.map(i => `
-    <div class="idea reveal">
-      💡 ${i.text}<br>
-      🗳️ ${i.votes || 0} votes | ❤️ ${i.likes || 0}
-    </div>
-  `).join("");
+        💡 ${i.text}<br>
+
+        🗳️ <span id="vote-${i.id}">${i.votes||0}</span> votes
+
+        <button onclick="vote('${i.id}', ${i.votes||0})">
+          Vote
+        </button>
+      </div>
+    `).join("");
 }
 
 async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({
-    text,
-    votes:0,
-    likes:0
-  });
+  await client.from("ideas").insert({ text, votes:0, likes:0 });
 
-  document.getElementById("ideaInput").value = "";
+  document.getElementById("ideaInput").value="";
   loadIdeas();
 
   confetti({particleCount:80, spread:60});
+}
+
+/* =========================
+   LIVE VOTE
+========================= */
+async function vote(id, votes){
+
+  const newVotes = votes + 1;
+
+  await client.from("ideas")
+    .update({ votes:newVotes })
+    .eq("id", id);
+
+  const el = document.getElementById("vote-"+id);
+  if(el){
+    el.innerText = newVotes;
+    el.classList.add("vote-pop");
+    setTimeout(()=>el.classList.remove("vote-pop"),400);
+  }
+
+  loadIdeas();
 }
 
 /* =========================
@@ -322,7 +387,7 @@ async function uploadPhoto(){
 
   if(!file) return;
 
-  const name = Date.now() + "-" + file.name;
+  const name = Date.now()+"-"+file.name;
 
   const { error } = await client.storage
     .from("campaign")
@@ -337,11 +402,7 @@ async function uploadPhoto(){
     .from("campaign")
     .getPublicUrl(name).data.publicUrl;
 
-  await client.from("photos").insert({
-    url,
-    caption,
-    likes:0
-  });
+  await client.from("photos").insert({ url, caption });
 
   loadPhotos();
 }
@@ -351,22 +412,21 @@ async function loadPhotos(){
 
   if(!data) return;
 
-  document.getElementById("feed").innerHTML = data.map(p => `
-    <div class="photo reveal">
-      <img src="${p.url}">
-      <div>${p.caption || ""}</div>
-    </div>
-  `).join("");
+  document.getElementById("feed").innerHTML =
+    data.map(p=>`
+      <div class="photo reveal">
+        <img src="${p.url}">
+        <div>${p.caption||""}</div>
+      </div>
+    `).join("");
 }
 
 /* =========================
    SCROLL REVEAL
 ========================= */
 function reveal(){
-  const elements = document.querySelectorAll(".reveal");
-  elements.forEach(el => {
-    const top = el.getBoundingClientRect().top;
-    if(top < window.innerHeight - 80){
+  document.querySelectorAll(".reveal").forEach(el=>{
+    if(el.getBoundingClientRect().top < window.innerHeight - 80){
       el.classList.add("active");
     }
   });
@@ -384,7 +444,7 @@ reveal();
 
 setInterval(updateTimer,1000);
 setInterval(loadIdeas,3000);
-setInterval(loadPhotos,3000);
+setInterval(loadPhotos,4000);
 
 </script>
 
