@@ -3,40 +3,33 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
 <title>Mavric Campaign</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
 
 /* =========================
-   GLOBAL
+   GLOBAL (SAFE BASE)
 ========================= */
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
-
 body{
-  font-family: Arial, sans-serif;
+  margin:0;
+  font-family:Arial;
   color:white;
-  overflow-x:hidden;
   background:#0b0b0f;
+  overflow-x:hidden;
 }
 
 /* =========================
-   CINEMATIC BACKGROUND
+   BACKGROUND (SAFE)
 ========================= */
-.bg-gradient{
+.bg{
   position:fixed;
   inset:0;
   z-index:-3;
-  background: linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d,#0b0b0f);
+  background:linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d,#0b0b0f);
   background-size:300% 300%;
-  animation: move 14s ease infinite;
+  animation:move 12s ease infinite;
 }
 
 @keyframes move{
@@ -45,7 +38,7 @@ body{
   100%{background-position:0% 50%}
 }
 
-.bg-glow{
+.glow{
   position:fixed;
   inset:0;
   z-index:-2;
@@ -54,127 +47,52 @@ body{
     radial-gradient(circle at 70% 80%, rgba(255,215,0,0.07), transparent 40%);
 }
 
-#particles{
+/* canvas must NEVER block UI */
+canvas{
   position:fixed;
   inset:0;
   z-index:-1;
-}
-
-/* =========================
-   INTRO
-========================= */
-#intro{
-  position:fixed;
-  inset:0;
-  background:#0b0b0f;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-  animation: introFade 2.5s ease forwards;
-}
-
-#intro h1{
-  font-size:42px;
-  color:#a855f7;
-}
-
-#intro p{
-  margin-top:10px;
-  opacity:0.8;
-}
-
-@keyframes introFade{
-  0%{opacity:1}
-  80%{opacity:1}
-  100%{opacity:0; visibility:hidden}
+  pointer-events:none;
 }
 
 /* =========================
    HEADER
 ========================= */
 header{
-  position:sticky;
-  top:0;
-  z-index:10;
-  background:rgba(17,17,17,0.9);
-  backdrop-filter:blur(10px);
   padding:14px;
   text-align:center;
-  color:#a855f7;
-  font-weight:800;
-  border-bottom:1px solid #333;
-}
-
-/* =========================
-   HERO
-========================= */
-.hero{
-  text-align:center;
-  padding:40px 20px;
-}
-
-.slogan{
+  background:#111;
   color:#a855f7;
   font-weight:bold;
-  margin-top:8px;
-}
-
-.hero p{
-  max-width:700px;
-  margin:12px auto;
-  opacity:0.85;
-  line-height:1.5;
 }
 
 /* =========================
    SECTIONS
 ========================= */
 .section{
-  padding:22px 16px;
+  padding:20px;
   text-align:center;
-  max-width:900px;
-  margin:auto;
 }
 
 /* =========================
-   INPUTS
+   BUTTONS
 ========================= */
-input, button{
-  width:92%;
-  max-width:360px;
-  padding:12px;
-  margin:8px auto;
-  display:block;
-  border-radius:10px;
-  border:none;
-}
-
-input{
-  background:#1a1a1a;
-  color:white;
-  border:1px solid #333;
-}
-
 button{
+  padding:10px;
+  border:none;
+  border-radius:8px;
   background:#a855f7;
   color:white;
-  font-weight:bold;
   cursor:pointer;
 }
 
-/* =========================
-   TIMER
-========================= */
-#timer{
-  color:#a855f7;
-  font-size:18px;
-}
-
-.voting-day{
-  font-size:24px;
-  color:gold;
-  font-weight:800;
+input{
+  padding:10px;
+  width:90%;
+  max-width:300px;
+  margin:6px;
+  border-radius:8px;
+  border:none;
 }
 
 /* =========================
@@ -182,73 +100,47 @@ button{
 ========================= */
 .idea{
   background:#111;
-  border:1px solid #333;
-  padding:12px;
   margin:10px auto;
-  max-width:520px;
+  padding:10px;
   border-radius:10px;
-  text-align:left;
-}
-
-.trending{
-  background:gold;
-  color:black;
-  font-size:12px;
-  padding:3px 6px;
-  border-radius:6px;
-  display:inline-block;
-  margin-bottom:6px;
-}
-
-.vote-pop{
-  animation: pop 0.4s ease;
-}
-
-@keyframes pop{
-  0%{transform:scale(1)}
-  50%{transform:scale(1.2)}
-  100%{transform:scale(1)}
+  max-width:500px;
+  border:1px solid #333;
 }
 
 /* =========================
-   FEED
+   PHOTO GRID
 ========================= */
 .feed{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
   gap:10px;
-}
-
-.photo{
-  background:#111;
-  border:1px solid #333;
-  border-radius:10px;
-  overflow:hidden;
 }
 
 .photo img{
   width:100%;
-  height:160px;
+  height:140px;
   object-fit:cover;
-}
-
-.photo div{
-  padding:8px;
-  font-size:13px;
+  border-radius:8px;
 }
 
 /* =========================
-   REVEAL
+   SAFE INTRO
 ========================= */
-.reveal{
-  opacity:0;
-  transform:translateY(20px);
-  transition:0.8s ease;
+#intro{
+  position:fixed;
+  inset:0;
+  background:#0b0b0f;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:9999;
+  animation:fade 2s forwards;
 }
 
-.reveal.active{
-  opacity:1;
-  transform:translateY(0);
+@keyframes fade{
+  0%{opacity:1}
+  80%{opacity:1}
+  100%{opacity:0; visibility:hidden}
 }
 
 </style>
@@ -256,153 +148,100 @@ button{
 
 <body>
 
-<!-- BACKGROUND -->
-<div class="bg-gradient"></div>
-<div class="bg-glow"></div>
-<canvas id="particles"></canvas>
+<div class="bg"></div>
+<div class="glow"></div>
 
-<!-- INTRO -->
+<canvas id="c"></canvas>
+
 <div id="intro">
   <div style="text-align:center">
-    <h1>Mavric Campaign</h1>
+    <h1 style="color:#a855f7">Mavric Campaign</h1>
     <p>Your Voice, My Actions.</p>
   </div>
 </div>
 
-<header>🗳️ Mavric Campaign Page</header>
+<header>Mavric Campaign Page</header>
 
-<!-- HERO -->
-<div class="hero reveal">
-  <h1>Leadership That Listens</h1>
-  <div class="slogan">Your Voice, My Actions.</div>
-
-  <p>
-    This campaign is about turning student ideas into real action,
-    not promises. Every student deserves to be heard and represented
-    with real results.
-  </p>
-</div>
-
-<!-- TIMER -->
-<div class="section reveal">
-  <h2>⏳ Countdown</h2>
+<div class="section">
+  <h2>Countdown</h2>
   <div id="timer"></div>
 </div>
 
-<!-- IDEAS -->
-<div class="section reveal">
-  <h2>🔥 Trending Ideas</h2>
-  <input id="ideaInput" placeholder="Submit idea"/>
-  <button onclick="submitIdea()">Submit</button>
-  <div id="ideas"></div>
+<div class="section">
+  <h2>Ideas</h2>
+  <input id="ideaInput" placeholder="Idea"/>
+  <button onclick="addIdea()">Post</button>
+  <div id="ideas">Loading...</div>
 </div>
 
-<!-- FEED -->
-<div class="section reveal">
-  <h2>📸 Supporter Feed</h2>
-  <input type="file" id="fileInput"/>
-  <input id="captionInput" placeholder="Caption"/>
-  <button onclick="uploadPhoto()">Upload</button>
+<div class="section">
+  <h2>Photos</h2>
+  <input type="file" id="file">
+  <input id="caption" placeholder="Caption">
+  <button onclick="upload()">Upload</button>
   <div class="feed" id="feed"></div>
 </div>
 
 <script>
 
 /* =========================
-   SUPABASE
+   SAFE SUPABASE INIT
 ========================= */
-const client = supabase.createClient(
-  "https://didfhlfvdvurkfwbipli.supabase.co",
-  "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-);
+let client=null;
 
-/* =========================
-   PASSWORD
-========================= */
-const UPLOAD_PASSWORD = "mavric123";
-
-/* =========================
-   INTRO REMOVE
-========================= */
-setTimeout(()=>document.getElementById("intro")?.remove(),2500);
+try{
+  client = supabase.createClient(
+    "https://didfhlfvdvurkfwbipli.supabase.co",
+    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+  );
+}catch(e){
+  console.log("Supabase failed but site still works");
+}
 
 /* =========================
    TIMER
 ========================= */
-const end = new Date("2026-04-24");
+const end=new Date("2026-04-24");
 
-function updateTimer(){
+function timer(){
   const diff=end-new Date();
   const el=document.getElementById("timer");
 
   if(diff<=0){
-    el.innerHTML=`<div class="voting-day">VOTING DAY</div>`;
+    el.innerHTML="VOTING DAY";
     return;
   }
 
   const d=Math.floor(diff/86400000);
-  const h=Math.floor(diff/3600000)%24;
-  const m=Math.floor(diff/60000)%60;
-
-  el.innerHTML=`${d}d ${h}h ${m}m left`;
+  el.innerHTML=d+" days left";
 }
 
 /* =========================
-   VOTING (ONE PER PERSON)
-========================= */
-function hasVoted(id){
-  return localStorage.getItem("vote_"+id)==="1";
-}
-
-function markVoted(id){
-  localStorage.setItem("vote_"+id,"1");
-}
-
-async function vote(id,votes){
-
-  if(hasVoted(id)){
-    alert("You already voted");
-    return;
-  }
-
-  await client.from("ideas")
-    .update({votes:votes+1})
-    .eq("id",id);
-
-  markVoted(id);
-
-  loadIdeas();
-}
-
-/* =========================
-   IDEAS (TRENDING)
+   IDEAS SAFE LOAD
 ========================= */
 async function loadIdeas(){
-  const {data}=await client.from("ideas").select("*");
-  if(!data) return;
+  try{
+    if(!client) return;
 
-  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+    const {data}=await client.from("ideas").select("*");
+    if(!data) return;
 
-  document.getElementById("ideas").innerHTML=
-  sorted.map((i,index)=>`
-    <div class="idea">
-      ${index===0?`<div class="trending">🔥 #1</div>`:""}
-      💡 ${i.text}<br>
-      🗳️ ${i.votes||0}
-      <button onclick="vote('${i.id}',${i.votes||0})"
-        ${hasVoted(i.id)?"disabled":""}>
-        Vote
-      </button>
-    </div>
-  `).join("");
+    document.getElementById("ideas").innerHTML=
+      data.map(i=>`
+        <div class="idea">
+          💡 ${i.text} <br>
+          🗳️ ${i.votes||0}
+        </div>
+      `).join("");
+
+  }catch(e){
+    document.getElementById("ideas").innerHTML="Ideas offline";
+  }
 }
 
-/* =========================
-   POST IDEA
-========================= */
-async function submitIdea(){
+async function addIdea(){
   const text=document.getElementById("ideaInput").value;
-  if(!text) return;
+  if(!text || !client) return;
 
   await client.from("ideas").insert({text,votes:0});
   document.getElementById("ideaInput").value="";
@@ -410,85 +249,91 @@ async function submitIdea(){
 }
 
 /* =========================
-   PHOTO UPLOAD (PASSWORD)
+   PHOTO SAFE
 ========================= */
-async function uploadPhoto(){
+async function upload(){
+  try{
+    if(!client) return;
 
-  const pw=prompt("Upload password:");
-  if(pw!==UPLOAD_PASSWORD){
-    alert("Wrong password");
-    return;
+    const file=document.getElementById("file").files[0];
+    const caption=document.getElementById("caption").value;
+    if(!file) return;
+
+    const name=Date.now()+"-"+file.name;
+
+    await client.storage.from("campaign").upload(name,file);
+
+    const url=client.storage.from("campaign")
+      .getPublicUrl(name).data.publicUrl;
+
+    await client.from("photos").insert({url,caption});
+
+    loadPhotos();
+
+  }catch(e){
+    alert("Upload failed");
   }
-
-  const file=document.getElementById("fileInput").files[0];
-  const caption=document.getElementById("captionInput").value;
-
-  if(!file) return;
-
-  const name=Date.now()+"-"+file.name;
-
-  await client.storage.from("campaign").upload(name,file);
-
-  const url=client.storage.from("campaign")
-    .getPublicUrl(name).data.publicUrl;
-
-  await client.from("photos").insert({url,caption});
-
-  loadPhotos();
 }
 
-/* =========================
-   PHOTOS
-========================= */
 async function loadPhotos(){
-  const {data}=await client.from("photos").select("*");
-  if(!data) return;
+  try{
+    if(!client) return;
 
-  document.getElementById("feed").innerHTML=
-  data.map(p=>`
-    <div class="photo reveal">
-      <img src="${p.url}">
-      <div>${p.caption||""}</div>
-    </div>
-  `).join("");
+    const {data}=await client.from("photos").select("*");
+    if(!data) return;
+
+    document.getElementById("feed").innerHTML=
+      data.map(p=>`
+        <div class="photo">
+          <img src="${p.url}">
+        </div>
+      `).join("");
+
+  }catch(e){}
 }
 
 /* =========================
-   PARTICLES
+   PARTICLES SAFE (NO CRASH)
 ========================= */
-const canvas=document.getElementById("particles");
+const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
 
-canvas.width=innerWidth;
-canvas.height=innerHeight;
+function resize(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener("resize",resize);
 
 let particles=[];
 
-for(let i=0;i<60;i++){
+for(let i=0;i<40;i++){
   particles.push({
     x:Math.random()*canvas.width,
     y:Math.random()*canvas.height,
     r:Math.random()*2,
-    dx:(Math.random()-0.5)*0.4,
-    dy:(Math.random()-0.5)*0.4
+    dx:(Math.random()-0.5)*0.3,
+    dy:(Math.random()-0.5)*0.3
   });
 }
 
 function animate(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  try{
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for(let p of particles){
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle="rgba(168,85,247,0.5)";
-    ctx.fill();
+    for(let p of particles){
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle="rgba(168,85,247,0.4)";
+      ctx.fill();
 
-    p.x+=p.dx;
-    p.y+=p.dy;
+      p.x+=p.dx;
+      p.y+=p.dy;
 
-    if(p.x<0||p.x>canvas.width) p.dx*=-1;
-    if(p.y<0||p.y>canvas.height) p.dy*=-1;
-  }
+      if(p.x<0||p.x>canvas.width) p.dx*=-1;
+      if(p.y<0||p.y>canvas.height) p.dy*=-1;
+    }
+  }catch(e){}
 
   requestAnimationFrame(animate);
 }
@@ -496,12 +341,20 @@ function animate(){
 animate();
 
 /* =========================
-   INIT
+   INIT SAFE ORDER
 ========================= */
+timer();
 loadIdeas();
 loadPhotos();
-updateTimer();
-setInterval(updateTimer,1000);
+
+setInterval(timer,1000);
+setInterval(loadIdeas,4000);
+setInterval(loadPhotos,5000);
+
+setTimeout(()=>{
+  const i=document.getElementById("intro");
+  if(i) i.remove();
+},2000);
 
 </script>
 
