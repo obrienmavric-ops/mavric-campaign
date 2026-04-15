@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mavric Campaign V4</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Mavric Campaign</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
 /* =========================
-   RESET
+   GLOBAL
 ========================= */
 *{
   margin:0;
@@ -16,10 +20,9 @@
 }
 
 body{
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial, sans-serif;
   color:white;
-  background:#0a0a0a;
-  overflow-x:hidden;
+  background:#0b0b0f;
 }
 
 /* =========================
@@ -28,66 +31,65 @@ body{
 header{
   position:sticky;
   top:0;
-  z-index:100;
+  z-index:10;
 
-  background: rgba(20,20,20,0.9);
-  backdrop-filter: blur(10px);
-
+  background:#111;
   padding:14px;
   text-align:center;
 
-  font-weight:700;
   color:#a855f7;
+  font-weight:800;
 
-  border-bottom:1px solid rgba(255,255,255,0.08);
+  border-bottom:1px solid #333;
 }
 
 /* =========================
-   SECTIONS (IMPORTANT FIX)
+   SECTIONS
 ========================= */
 .section{
   padding:22px 16px;
+  text-align:center;
   max-width:900px;
   margin:auto;
-
-  text-align:center;
 }
 
 /* =========================
    INPUTS + BUTTONS
 ========================= */
 input, button{
-  width:100%;
+  width:92%;
   max-width:360px;
   padding:12px;
-
   margin:8px auto;
+
   display:block;
-
   border-radius:10px;
-  border:1px solid rgba(255,255,255,0.1);
+  border:none;
+}
 
-  background:#111;
+input{
+  background:#1a1a1a;
   color:white;
+  border:1px solid #333;
 }
 
 button{
-  background: linear-gradient(135deg, #a855f7, #6366f1);
+  background:#a855f7;
+  color:white;
+  font-weight:bold;
   cursor:pointer;
-  font-weight:600;
-  transition:0.2s ease;
 }
 
 button:hover{
-  transform: scale(1.03);
+  opacity:0.9;
 }
 
 /* =========================
-   TIMER (FIXED VISIBILITY)
+   TIMER
 ========================= */
 #timer{
-  margin-top:10px;
   font-size:18px;
+  margin-top:10px;
   color:#a855f7;
 }
 
@@ -95,27 +97,23 @@ button:hover{
   font-size:24px;
   font-weight:800;
   color:gold;
-  text-shadow:0 0 10px gold;
 }
 
 /* =========================
-   IDEAS (FIXED)
+   IDEAS
 ========================= */
 .idea{
   background:#111;
-  border:1px solid rgba(255,255,255,0.08);
-
+  border:1px solid #333;
   padding:12px;
   margin:10px auto;
-
   max-width:520px;
-  border-radius:12px;
-
+  border-radius:10px;
   text-align:left;
 }
 
 /* =========================
-   FEED GRID (FIXED IMAGES)
+   FEED
 ========================= */
 .feed{
   display:grid;
@@ -125,11 +123,12 @@ button:hover{
 
 .photo{
   background:#111;
-  border-radius:12px;
+  border:1px solid #333;
+  border-radius:10px;
   overflow:hidden;
 }
 
-/* 🔥 FIX IMAGE STRETCHING */
+/* FIX IMAGE STRETCH */
 .photo img{
   width:100%;
   height:160px;
@@ -141,50 +140,59 @@ button:hover{
   padding:8px;
   font-size:13px;
 }
-
-/* =========================
-   SMALL ANIMATIONS (SAFE)
-========================= */
-.section{
-  animation: fadeIn 0.6s ease;
-}
-
-@keyframes fadeIn{
-  from{opacity:0; transform:translateY(10px)}
-  to{opacity:1; transform:translateY(0)}
-}
-
-/* =========================
-   MOBILE
-========================= */
-@media (max-width:600px){
-  .section{
-    padding:18px 12px;
-  }
-}
 </style>
+</head>
+
+<body>
+
+<header>🗳️ Mavric Campaign Page</header>
+
+<!-- HERO -->
+<div class="section">
+  <h2>Your Voice. Your Vote.</h2>
+  <div id="timer"></div>
+</div>
+
+<!-- IDEAS -->
+<div class="section">
+  <h2>💡 Ideas</h2>
+  <input id="ideaInput" placeholder="Submit idea"/>
+  <button onclick="submitIdea()">Submit</button>
+  <div id="ideas">Loading...</div>
+</div>
+
+<!-- PHOTO UPLOAD -->
+<div class="section">
+  <h2>📸 Supporter Feed</h2>
+  <input type="file" id="fileInput" multiple />
+  <input id="captionInput" placeholder="Caption"/>
+  <button onclick="uploadPhoto()">Upload</button>
+  <div class="feed" id="feed"></div>
+</div>
+
 <script>
 
+/* =========================
+   SUPABASE
+========================= */
 const SUPABASE_URL = "https://didfhlfvdvurkfwbipli.supabase.co";
 const SUPABASE_KEY = "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0";
+
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const UPLOAD_PASSWORD = "mavric123";
-
-let userId = localStorage.getItem("userId");
-if(!userId){
-  userId = Math.random().toString(36).substring(2);
-  localStorage.setItem("userId", userId);
-}
-
-/* COUNTDOWN */
+/* =========================
+   TIMER
+========================= */
 const end = new Date("2026-04-24T00:00:00");
 
 function updateTimer(){
-  const diff = end - new Date();
+  const now = new Date();
+  const diff = end - now;
+
+  const el = document.getElementById("timer");
 
   if(diff <= 0){
-    document.getElementById("timer").innerHTML = "🗳️ VOTING DAY IS HERE!";
+    el.innerHTML = `<div class="voting-day">🗳️ VOTING DAY IS HERE</div>`;
     return;
   }
 
@@ -192,134 +200,107 @@ function updateTimer(){
   const h = Math.floor(diff/3600000)%24;
   const m = Math.floor(diff/60000)%60;
 
-  document.getElementById("timer").innerHTML =
-  `${d}d ${h}h ${m}m left`;
+  el.innerHTML = `⏳ ${d}d ${h}h ${m}m left`;
 }
 
-/* LOAD IDEAS */
+/* =========================
+   IDEAS
+========================= */
 async function loadIdeas(){
-  const { data } = await client.from("ideas").select("*");
-  if(!data) return;
+  const { data, error } = await client.from("ideas").select("*");
 
-  const sorted = [...data].sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const el = document.getElementById("ideas");
 
-  document.getElementById("trending").innerHTML =
-    sorted.slice(0,3).map(renderIdea).join("");
+  if(error){
+    el.innerHTML = error.message;
+    return;
+  }
 
-  document.getElementById("ideas").innerHTML =
-    sorted.map(renderIdea).join("");
-}
+  if(!data){
+    el.innerHTML = "No ideas yet";
+    return;
+  }
 
-/* RENDER IDEA */
-function renderIdea(i){
-  return `
-  <div class="idea ${i.votes > 5 ? "trending" : ""}">
-    💡 ${i.text}<br><br>
-    🗳️ ${i.votes || 0} votes
-
-    <div class="voteBtn" onclick="vote('${i.id}')">
-      👍 Vote
+  el.innerHTML = data.map(i => `
+    <div class="idea">
+      💡 ${i.text}<br>
+      🗳️ ${i.votes || 0} votes | ❤️ ${i.likes || 0}
     </div>
-  </div>
-  `;
+  `).join("");
 }
 
-/* VOTE (1 per user per idea) */
-async function vote(id){
-
-  let voted = JSON.parse(localStorage.getItem("votes") || "{}");
-  if(voted[id]) return alert("You already voted on this idea!");
-
-  const { data } = await client.from("ideas").select("*").eq("id", id).single();
-
-  await client.from("ideas")
-    .update({ votes: (data.votes || 0) + 1 })
-    .eq("id", id);
-
-  voted[id] = true;
-  localStorage.setItem("votes", JSON.stringify(voted));
-
-  loadIdeas();
-  confetti({particleCount:60, spread:70});
-}
-
-/* SUBMIT IDEA */
 async function submitIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({ text, votes:0 });
+  await client.from("ideas").insert({
+    text,
+    votes:0,
+    likes:0
+  });
 
   document.getElementById("ideaInput").value = "";
   loadIdeas();
 
-  confetti();
+  confetti({particleCount:80, spread:60});
 }
 
-/* PHOTO UPLOAD */
+/* =========================
+   PHOTOS
+========================= */
 async function uploadPhoto(){
+  const file = document.getElementById("fileInput").files[0];
+  const caption = document.getElementById("captionInput").value;
 
-  const pass = document.getElementById("uploadPass").value;
-  if(pass !== UPLOAD_PASSWORD){
-    alert("Wrong password!");
+  if(!file) return;
+
+  const name = Date.now() + "-" + file.name;
+
+  const { error } = await client.storage
+    .from("campaign")
+    .upload(name, file);
+
+  if(error){
+    alert(error.message);
     return;
   }
 
-  const files = fileInput.files;
-  const caption = captionInput.value;
+  const url = client.storage
+    .from("campaign")
+    .getPublicUrl(name).data.publicUrl;
 
-  if(!files.length) return;
-
-  const limit = Math.min(files.length, 25);
-
-  for(let i=0;i<limit;i++){
-    const file = files[i];
-    const name = Date.now()+"-"+file.name;
-
-    const { error } = await client.storage
-      .from("campaign")
-      .upload(name, file);
-
-    if(error){
-      alert(error.message);
-      return;
-    }
-
-    const url = client.storage
-      .from("campaign")
-      .getPublicUrl(name).data.publicUrl;
-
-    await client.from("photos").insert({
-      url,
-      caption
-    });
-  }
+  await client.from("photos").insert({
+    url,
+    caption,
+    likes:0
+  });
 
   loadPhotos();
 }
 
-/* LOAD PHOTOS */
 async function loadPhotos(){
   const { data } = await client.from("photos").select("*");
+
   if(!data) return;
 
-  document.getElementById("feed").innerHTML =
-    data.map(p=>`
-      <div class="photo">
-        <img src="${p.url}">
-        <div>${p.caption || ""}</div>
-      </div>
-    `).join("");
+  document.getElementById("feed").innerHTML = data.map(p => `
+    <div class="photo">
+      <img src="${p.url}">
+      <div>${p.caption || ""}</div>
+    </div>
+  `).join("");
 }
 
-/* INIT */
+/* =========================
+   INIT
+========================= */
 loadIdeas();
 loadPhotos();
 updateTimer();
 
 setInterval(updateTimer,1000);
-setInterval(loadIdeas,4000);
-setInterval(loadPhotos,4000);
+setInterval(loadIdeas,3000);
+setInterval(loadPhotos,3000);
 
 </script>
 
