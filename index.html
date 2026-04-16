@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Platform V4</title>
+<title>Mavric Election Platform</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -71,18 +71,14 @@ input{
 <script>
 
 /* =========================
-   SAFE SUPABASE LOAD
+   SAFE SUPABASE LOADER
 ========================= */
 let supabase = null;
 let user = null;
 
-function init(){
-  if(!window.supabase){
-    document.getElementById("status").innerText = "Supabase failed to load";
-    return;
-  }
+function waitForSupabase(){
+  if(window.supabase){
 
-  try{
     supabase = window.supabase.createClient(
       "PASTE_SUPABASE_URL",
       "PASTE_SUPABASE_ANON_KEY"
@@ -94,9 +90,8 @@ function init(){
     setupButtons();
     loadIdeas();
 
-  }catch(e){
-    document.getElementById("status").innerText = "Error loading";
-    console.error(e);
+  } else {
+    setTimeout(waitForSupabase, 200);
   }
 }
 
@@ -116,13 +111,12 @@ function setupAuth(){
 ========================= */
 function setupButtons(){
 
-  document.getElementById("loginBtn").onclick = async () => {
-    if(!supabase) return alert("Not ready");
-    await supabase.auth.signInWithOAuth({provider:"google"});
+  document.getElementById("loginBtn").onclick = () => {
+    supabase.auth.signInWithOAuth({provider:"google"});
   };
 
-  document.getElementById("logoutBtn").onclick = async () => {
-    await supabase.auth.signOut();
+  document.getElementById("logoutBtn").onclick = () => {
+    supabase.auth.signOut();
   };
 
   document.getElementById("postBtn").onclick = async () => {
@@ -131,7 +125,11 @@ function setupButtons(){
     const text = document.getElementById("ideaInput").value;
     if(!text) return;
 
-    await supabase.from("ideas").insert({text, votes:0});
+    await supabase.from("ideas").insert({
+      text,
+      votes:0
+    });
+
     document.getElementById("ideaInput").value="";
     loadIdeas();
   };
@@ -157,8 +155,6 @@ async function vote(id){
 }
 
 async function loadIdeas(){
-  if(!supabase) return;
-
   const {data} = await supabase.from("ideas").select("*");
   if(!data) return;
 
@@ -173,7 +169,7 @@ async function loadIdeas(){
 }
 
 /* =========================
-   GAME
+   GAME (FIXED)
 ========================= */
 let running=false;
 let score=0;
@@ -195,8 +191,8 @@ function hit(){
   document.getElementById("score").innerText=score;
 }
 
-/* INIT */
-setTimeout(init,500);
+/* START */
+waitForSupabase();
 
 </script>
 
