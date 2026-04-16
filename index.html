@@ -2,37 +2,210 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<title>DEBUG TEST</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mavric Election V5 Stable</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#0b0b12;
+  color:white;
+  text-align:center;
+}
+
+button{
+  padding:10px;
+  margin:6px;
+  background:#a855f7;
+  border:none;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
+}
+
+input{
+  padding:10px;
+  margin:6px;
+  border-radius:8px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
+}
+
+.card{
+  background:#111;
+  margin:10px;
+  padding:10px;
+  border-radius:10px;
+}
+</style>
 </head>
 
-<body style="background:black;color:white;text-align:center;padding:40px;">
+<body>
 
-<h1>DEBUG MODE</h1>
+<h1>🗳️ MAVRIC ELECTION V5</h1>
 
-<div id="step1">Step 1: Page Loaded ❌</div>
-<div id="step2">Step 2: JS Running ❌</div>
-<div id="step3">Step 3: Buttons Active ❌</div>
+<div id="status">UI Ready</div>
 
-<button id="testBtn">CLICK TEST</button>
+<button id="loginBtn">Login</button>
+<button id="logoutBtn">Logout</button>
+
+<div id="user">Not logged in</div>
+
+<input id="ideaInput" placeholder="Enter idea"/>
+<button id="postBtn">Post Idea</button>
+
+<div id="ideas"></div>
+
+<h2>🎮 Game</h2>
+<button id="startBtn">Start</button>
+<button id="hitBtn">⭐ Click</button>
+<div id="score">0</div>
 
 <script>
 
-document.getElementById("step1").innerText = "Step 1: Page Loaded ✅";
-console.log("STEP 1 OK");
+/* =========================
+   SAFE STATE (NO CRASH INIT)
+========================= */
 
-try {
-  document.getElementById("step2").innerText = "Step 2: JS Running ✅";
-  console.log("STEP 2 OK");
-} catch(e){
-  console.log("STEP 2 FAIL", e);
+let supabase = null;
+let user = null;
+
+/* UI FIRST — ALWAYS SAFE */
+setupUI();
+
+/* =========================
+   TRY SUPABASE AFTER UI LOADS
+========================= */
+setTimeout(initSupabase, 500);
+
+function initSupabase(){
+  try {
+    if(!window.supabase){
+      document.getElementById("status").innerText =
+        "Supabase failed to load (CDN issue)";
+      return;
+    }
+
+    supabase = window.supabase.createClient(
+      "PASTE_SUPABASE_URL",
+      "PASTE_SUPABASE_ANON_KEY"
+    );
+
+    document.getElementById("status").innerText =
+      "Connected to backend";
+
+    setupAuth();
+    loadIdeas();
+
+  } catch(e){
+    console.error(e);
+    document.getElementById("status").innerText =
+      "Supabase error (safe mode active)";
+  }
 }
 
-document.getElementById("testBtn").onclick = () => {
-  alert("BUTTON WORKS");
-  document.getElementById("step3").innerText = "Step 3: Buttons Active ✅";
-};
+/* =========================
+   UI ALWAYS WORKS
+========================= */
+function setupUI(){
 
-console.log("SCRIPT FINISHED");
+  document.getElementById("loginBtn").onclick = async () => {
+    if(!supabase) return alert("Backend not ready");
+    await supabase.auth.signInWithOAuth({provider:"google"});
+  };
+
+  document.getElementById("logoutBtn").onclick = async () => {
+    if(!supabase) return;
+    await supabase.auth.signOut();
+  };
+
+  document.getElementById("postBtn").onclick = async () => {
+    if(!supabase) return alert("Backend not ready");
+    if(!user) return alert("Login first");
+
+    const text = document.getElementById("ideaInput").value;
+    if(!text) return;
+
+    await supabase.from("ideas").insert({text, votes:0});
+    document.getElementById("ideaInput").value="";
+    loadIdeas();
+  };
+
+  document.getElementById("startBtn").onclick = startGame;
+  document.getElementById("hitBtn").onclick = hit;
+}
+
+/* =========================
+   AUTH
+========================= */
+function setupAuth(){
+  supabase.auth.onAuthStateChange((_,session)=>{
+    user = session?.user || null;
+    document.getElementById("user").innerText =
+      user ? user.email : "Not logged in";
+  });
+}
+
+/* =========================
+   IDEAS
+========================= */
+async function loadIdeas(){
+  if(!supabase) return;
+
+  const {data} = await supabase.from("ideas").select("*");
+  if(!data) return;
+
+  document.getElementById("ideas").innerHTML =
+    data.map(i=>`
+      <div class="card">
+        💡 ${i.text}
+        <div>🗳️ ${i.votes||0}</div>
+        <button onclick="vote('${i.id}')">Vote</button>
+      </div>
+    `).join("");
+}
+
+async function vote(id){
+  if(!supabase) return;
+
+  const {data} = await supabase.from("ideas")
+    .select("votes")
+    .eq("id",id)
+    .single();
+
+  await supabase.from("ideas")
+    .update({votes:(data.votes||0)+1})
+    .eq("id",id);
+
+  loadIdeas();
+}
+
+/* =========================
+   GAME (FULLY SAFE)
+========================= */
+let running=false;
+let score=0;
+
+function startGame(){
+  running=true;
+  score=0;
+  document.getElementById("score").innerText=0;
+
+  setTimeout(()=>{
+    running=false;
+    alert("Score: "+score);
+  },8000);
+}
+
+function hit(){
+  if(!running) return;
+  score++;
+  document.getElementById("score").innerText=score;
+}
 
 </script>
 
