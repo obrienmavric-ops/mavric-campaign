@@ -3,134 +3,33 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Broadcast V3</title>
+<title>Election V3.1 FIXED</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-
-/* =========================
-   TV BROADCAST STYLE
-========================= */
-body{
-  margin:0;
-  font-family:Arial;
-  background:#05050a;
-  color:white;
-  overflow-x:hidden;
-}
-
-/* TOP BAR */
-header{
-  display:flex;
-  justify-content:space-between;
-  padding:12px;
-  background:#111;
-  border-bottom:1px solid #333;
-}
-
-.live{
-  color:red;
-  font-weight:bold;
-  animation:blink 1s infinite;
-}
+body{margin:0;font-family:Arial;background:#05050a;color:white;}
+header{display:flex;justify-content:space-between;padding:12px;background:#111;}
+.live{color:red;animation:blink 1s infinite;}
 @keyframes blink{50%{opacity:0.3}}
 
-/* TICKER */
-.ticker{
-  white-space:nowrap;
-  overflow:hidden;
-  background:#1a0b2e;
-  padding:8px;
-}
-.ticker span{
-  display:inline-block;
-  animation:scroll 15s linear infinite;
-}
-@keyframes scroll{
-  from{transform:translateX(100%)}
-  to{transform:translateX(-100%)}
-}
+.container{padding:10px;max-width:800px;margin:auto;}
 
-/* MAIN LAYOUT */
-.container{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:15px;
-  padding:10px;
-  max-width:900px;
-  margin:auto;
-}
+button{padding:10px;margin:5px;background:#a855f7;border:none;border-radius:8px;color:white;cursor:pointer;}
+input{padding:10px;width:100%;margin:5px 0;border-radius:8px;border:none;background:#1a1a1a;color:white;}
 
-/* IDEA CARD */
-.card{
-  background:#111;
-  border:1px solid #333;
-  padding:12px;
-  border-radius:10px;
-  transition:0.3s;
-}
+.card{background:#111;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #333;}
+.leader{border:2px solid gold;}
 
-.leader{
-  border:2px solid gold;
-  box-shadow:0 0 20px rgba(255,215,0,0.3);
-}
+.bar{height:10px;background:#222;border-radius:10px;}
+.fill{height:100%;background:linear-gradient(90deg,#a855f7,gold);}
 
-/* SURGE BAR (ANIMATED) */
-.bar{
-  height:14px;
-  background:#222;
-  border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
-}
+.star{font-size:50px;cursor:pointer;text-align:center;}
 
-.fill{
-  height:100%;
-  background:linear-gradient(90deg,#a855f7,gold);
-  transition:0.6s ease;
-}
-
-/* TRENDING TAG */
-.trend{
-  color:#00ff99;
-  font-weight:bold;
-  font-size:12px;
-}
-
-/* PHOTO GRID */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-  gap:8px;
-}
-
-.photo{
-  width:100%;
-  aspect-ratio:1/1;
-  object-fit:cover;
-  border-radius:10px;
-}
-
-/* GAME */
-.game{
+#error{
+  color:red;
   text-align:center;
-  padding:20px;
-}
-
-.star{
-  font-size:55px;
-  cursor:pointer;
-  user-select:none;
-}
-
-/* BROADCAST LOWER THIRD */
-.banner{
-  background:#000;
   padding:10px;
-  border-top:1px solid #333;
-  text-align:center;
-  font-weight:bold;
 }
 </style>
 </head>
@@ -138,131 +37,132 @@ header{
 <body>
 
 <header>
-  <div>📺 ELECTION NIGHT LIVE</div>
-  <div class="live">🔴 BROADCAST</div>
+  <div>📺 LIVE ELECTION</div>
+  <div class="live">🔴 LIVE</div>
 </header>
 
-<div class="ticker">
-  <span id="ticker">Loading election data...</span>
-</div>
+<div id="error"></div>
 
 <div class="container">
 
-<!-- AUTH -->
-<button onclick="login()">Login with Google</button>
+<button onclick="login()">Login</button>
 <button onclick="logout()">Logout</button>
 <div id="user"></div>
 
-<!-- IDEAS -->
-<h3>🗳️ Live Ideas</h3>
+<input id="ideaInput" placeholder="Idea"/>
+<button onclick="addIdea()">Post Idea</button>
+
 <div id="ideas"></div>
 
-<!-- PHOTOS -->
-<h3>📸 Supporter Feed</h3>
-<div class="grid" id="photos"></div>
-
-<!-- GAME -->
-<h3>🎮 Mavric Click Game</h3>
-<button onclick="startGame()">Start 10s Challenge</button>
+<h3>🎮 Game</h3>
+<button onclick="startGame()">Start</button>
 <div class="star" onclick="hit()">⭐</div>
 <div id="score">0</div>
 
 </div>
 
-<div class="banner" id="banner">
-LIVE ELECTION BROADCAST MODE ACTIVE
-</div>
-
 <script>
 
-/* =========================
-   SUPABASE
-========================= */
-const supabase = window.supabase.createClient(
-  "PASTE_SUPABASE_URL",
-  "PASTE_SUPABASE_ANON_KEY"
-);
+/* SAFE INIT */
+let supabase;
+try {
+  supabase = window.supabase.createClient(
+    "PASTE_SUPABASE_URL",
+    "PASTE_SUPABASE_ANON_KEY"
+  );
+} catch(e){
+  document.getElementById("error").innerText =
+    "Supabase failed to load.";
+  console.error(e);
+}
 
-let user=null;
+/* GLOBAL ERROR HANDLER */
+window.onerror = function(msg){
+  document.getElementById("error").innerText = msg;
+};
 
 /* AUTH */
+let user=null;
+
 async function login(){
-  await supabase.auth.signInWithOAuth({provider:"google"});
+  try{
+    await supabase.auth.signInWithOAuth({provider:"google"});
+  }catch(e){
+    alert("Login failed");
+    console.error(e);
+  }
 }
 
 async function logout(){
   await supabase.auth.signOut();
 }
 
-supabase.auth.onAuthStateChange((_,session)=>{
+supabase?.auth.onAuthStateChange((_,session)=>{
   user=session?.user||null;
   document.getElementById("user").innerText =
-    user ? "Logged in: "+user.email : "Not logged out";
+    user ? user.email : "Not logged in";
 });
 
-/* =========================
-   IDEAS + SURGE ENGINE
-========================= */
+/* IDEAS */
+async function addIdea(){
+  if(!user) return alert("Login first");
+
+  const text=document.getElementById("ideaInput").value;
+  if(!text) return;
+
+  await supabase.from("ideas").insert({
+    text,
+    votes:0
+  });
+
+  loadIdeas();
+}
+
+async function vote(id){
+  const {data}=await supabase.from("ideas")
+    .select("votes")
+    .eq("id",id)
+    .single();
+
+  await supabase.from("ideas")
+    .update({votes:(data.votes||0)+1})
+    .eq("id",id);
+
+  loadIdeas();
+}
+
 async function loadIdeas(){
-  const {data}=await supabase.from("ideas").select("*");
-  if(!data) return;
+  try{
+    const {data}=await supabase.from("ideas").select("*");
+    if(!data) return;
 
-  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total=Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
+    const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
 
-  document.getElementById("ideas").innerHTML=
-    sorted.map((i,index)=>{
-      const percent=((i.votes||0)/total*100).toFixed(1);
-
-      const trending = percent > 25 ? "🔥 TRENDING" : "";
-
-      return `
-      <div class="card ${index===0?"leader":""}">
-        <div>
-          ${index===0 ? "👑 LEADING IDEA" : "#"+(index+1)}
+    document.getElementById("ideas").innerHTML=
+      sorted.map((i,index)=>`
+        <div class="card ${index===0?"leader":""}">
+          ${i.text}
+          <div>${i.votes||0}</div>
+          <button onclick="vote('${i.id}')">Vote</button>
         </div>
-
-        <div>${i.text}</div>
-
-        <div class="trend">${trending}</div>
-
-        <div>🗳️ ${i.votes||0}</div>
-
-        <div class="bar">
-          <div class="fill" style="width:${percent}%"></div>
-        </div>
-      </div>`;
-    }).join("");
-
-  document.getElementById("ticker").innerText =
-    "BREAKING: " + sorted.slice(0,5).map(i=>i.text).join(" • ");
+      `).join("");
+  }catch(e){
+    console.error(e);
+  }
 }
 
-/* =========================
-   PHOTOS
-========================= */
-async function loadPhotos(){
-  const {data}=await supabase.from("photos").select("*");
-  if(!data) return;
-
-  document.getElementById("photos").innerHTML=
-    data.map(p=>`<img class="photo" src="${p.url}">`).join("");
-}
-
-/* =========================
-   GAME (FIXED V3)
-========================= */
-let score=0;
+/* GAME FIX */
 let running=false;
+let score=0;
 
 function startGame(){
-  score=0;
   running=true;
+  score=0;
   document.getElementById("score").innerText=0;
 
   setTimeout(()=>{
     running=false;
-    alert("Final Score: "+score);
+    alert("Score: "+score);
   },10000);
 }
 
@@ -272,21 +172,8 @@ function hit(){
   document.getElementById("score").innerText=score;
 }
 
-/* =========================
-   REALTIME
-========================= */
-supabase.channel('ideas')
-  .on('postgres_changes',{event:'*',schema:'public',table:'ideas'},loadIdeas)
-  .subscribe();
-
-supabase.channel('photos')
-  .on('postgres_changes',{event:'*',schema:'public',table:'photos'},loadPhotos)
-  .subscribe();
-
 /* INIT */
 loadIdeas();
-loadPhotos();
-setInterval(loadIdeas,4000);
 
 </script>
 
