@@ -3,90 +3,84 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Campaign Live</title>
+<title>Mavric Election Platform</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
 body{
   margin:0;
   font-family:Arial;
-  background:#0b0b0f;
+  background:#0a0a10;
   color:white;
-}
-
-/* BACKGROUND */
-.bg{
-  position:fixed;
-  inset:0;
-  background:linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d);
-  z-index:-2;
-  animation:move 10s infinite linear;
-}
-@keyframes move{
-  0%{background-position:0%}
-  100%{background-position:200%}
 }
 
 /* HEADER */
 header{
-  text-align:center;
+  display:flex;
+  justify-content:space-between;
   padding:12px;
   background:#111;
-  color:#a855f7;
+  border-bottom:1px solid #333;
+}
+
+.live{
+  color:red;
   font-weight:bold;
+  animation:blink 1s infinite;
 }
+@keyframes blink{50%{opacity:0.3}}
 
-/* BUTTONS */
-button{
-  background:#a855f7;
-  border:none;
-  color:white;
-  padding:10px;
-  margin:6px;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-/* INPUT */
+/* INPUTS */
 input{
+  width:90%;
+  max-width:400px;
   padding:10px;
   margin:6px;
-  width:90%;
-  max-width:350px;
   border-radius:8px;
   border:none;
   background:#1a1a1a;
   color:white;
 }
 
+button{
+  padding:10px;
+  margin:5px;
+  background:#a855f7;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
 /* BOARD */
 .card{
   background:#111;
+  border:1px solid #333;
   margin:10px auto;
   padding:12px;
   max-width:600px;
   border-radius:10px;
-  border:1px solid #333;
 }
 
 .leader{
-  border:1px solid gold;
+  border:2px solid gold;
 }
 
 /* BAR */
 .bar{
-  background:#222;
   height:10px;
+  background:#222;
   border-radius:10px;
   overflow:hidden;
 }
 .fill{
-  background:linear-gradient(90deg,#a855f7,gold);
   height:100%;
+  background:linear-gradient(90deg,#a855f7,gold);
 }
 
-/* IMAGE GRID FIX (NO STRETCH) */
+/* PHOTOS */
 .feed{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
@@ -102,42 +96,44 @@ input{
 }
 
 /* GAME */
-.gameBox{
+.game{
   text-align:center;
   padding:20px;
 }
 .target{
-  font-size:40px;
+  font-size:50px;
   cursor:pointer;
-  user-select:none;
 }
+
 </style>
 </head>
 
 <body>
 
-<div class="bg"></div>
-<header>🗳️ MAVRIC CAMPAIGN LIVE</header>
+<header>
+  <div>🗳️ MAVRIC ELECTION LIVE</div>
+  <div class="live">🔴 LIVE</div>
+</header>
 
 <!-- LOGIN -->
-<div class="gameBox">
+<div style="text-align:center;padding:10px;">
   <button onclick="login()">Login with Google</button>
   <button onclick="logout()">Logout</button>
   <div id="user"></div>
 </div>
 
-<!-- IDEAS -->
-<div class="gameBox">
-  <h2>💡 Add Idea (Google login required)</h2>
-  <input id="ideaInput" placeholder="Your idea..."/>
+<!-- IDEA INPUT -->
+<div style="text-align:center;">
+  <input id="ideaInput" placeholder="Share your idea..."/>
   <button onclick="addIdea()">Post Idea</button>
 </div>
 
+<!-- BOARD -->
 <div id="ideas"></div>
 
 <!-- PHOTOS -->
-<div class="gameBox">
-  <h2>📸 Supporter Photos</h2>
+<div style="text-align:center;">
+  <h3>📸 Supporter Wall</h3>
   <input type="file" id="files" multiple/>
   <input id="caption" placeholder="Caption"/>
   <button onclick="upload()">Upload</button>
@@ -146,12 +142,11 @@ input{
 <div class="feed" id="feed"></div>
 
 <!-- GAME -->
-<div class="gameBox">
-  <h2>🎮 Vote Mavric O’Brien Game</h2>
-  <p>Click the MAVRIC icon as fast as you can in 10 seconds!</p>
-  <button onclick="startGame()">Start Game</button>
-  <div class="target" id="target" onclick="scoreHit()">⭐</div>
-  <h3 id="score">Score: 0</h3>
+<div class="game">
+  <h2>🎮 Click Rush</h2>
+  <button onclick="startGame()">Start</button>
+  <div class="target" onclick="hit()">⭐</div>
+  <h3 id="score">0</h3>
 </div>
 
 <script>
@@ -163,68 +158,82 @@ const client = supabase.createClient(
 );
 
 /* AUTH */
-let user = null;
+let user=null;
 
 async function login(){
-  await client.auth.signInWithOAuth({
-    provider:"google"
-  });
+  await client.auth.signInWithOAuth({provider:"google"});
 }
 
 async function logout(){
   await client.auth.signOut();
-  user=null;
-  updateUser();
 }
 
-client.auth.onAuthStateChange((event, session)=>{
-  user = session?.user || null;
-  updateUser();
+client.auth.onAuthStateChange((_,session)=>{
+  user=session?.user||null;
+  document.getElementById("user").innerText =
+    user ? "Logged in: "+user.email : "Not logged in";
 });
 
-function updateUser(){
-  document.getElementById("user").innerText =
-    user ? `Logged in: ${user.email}` : "Not logged in";
-}
+/* =====================
+   IDEAS
+===================== */
 
-/* IDEAS */
 async function addIdea(){
   if(!user){
     alert("Login required");
     return;
   }
 
-  const text = document.getElementById("ideaInput").value;
-  if(!text) return;
+  const text=document.getElementById("ideaInput").value;
+  if(!text)return;
 
   await client.from("ideas").insert({
     text,
     votes:0,
-    user:user.email
+    voters:[]
   });
 
   document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-async function vote(id,votes){
+/* 🔐 LOGIN-LOCKED VOTING */
+async function vote(id, votes, voters){
+
+  if(!user){
+    alert("You must log in to vote");
+    return;
+  }
+
+  const uid = user.id;
+
+  if(voters?.includes(uid)){
+    alert("You already voted on this idea");
+    return;
+  }
+
+  const newVoters = voters ? [...voters, uid] : [uid];
+
   await client.from("ideas")
-    .update({votes:votes+1})
-    .eq("id",id);
+    .update({
+      votes: votes + 1,
+      voters: newVoters
+    })
+    .eq("id", id);
 
   loadIdeas();
 }
 
 async function loadIdeas(){
-  const {data} = await client.from("ideas").select("*");
-  if(!data) return;
+  const {data}=await client.from("ideas").select("*");
+  if(!data)return;
 
-  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
+  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total=Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
 
-  document.getElementById("ideas").innerHTML =
+  document.getElementById("ideas").innerHTML=
     sorted.map((i,index)=>{
-      const percent = ((i.votes||0)/total*100).toFixed(1);
+      const percent=((i.votes||0)/total*100).toFixed(1);
 
       return `
         <div class="card ${index===0?"leader":""}">
@@ -235,30 +244,34 @@ async function loadIdeas(){
             <div class="fill" style="width:${percent}%"></div>
           </div>
 
-          <button onclick="vote('${i.id}',${i.votes||0})">Vote</button>
+          <button onclick="vote('${i.id}',${i.votes||0},${JSON.stringify(i.voters||[])})">
+            Vote
+          </button>
         </div>
       `;
     }).join("");
 }
 
-/* PHOTOS */
-async function upload(){
+/* =====================
+   PHOTOS
+===================== */
 
+async function upload(){
   if(!user){
     alert("Login required");
     return;
   }
 
-  const files = document.getElementById("files").files;
-  const caption = document.getElementById("caption").value;
+  const files=document.getElementById("files").files;
+  const caption=document.getElementById("caption").value;
 
   for(let i=0;i<Math.min(files.length,25);i++){
-    const file = files[i];
-    const name = Date.now()+"-"+file.name;
+    const file=files[i];
+    const name=Date.now()+"-"+file.name;
 
     await client.storage.from("campaign").upload(name,file);
 
-    const url = client.storage.from("campaign")
+    const url=client.storage.from("campaign")
       .getPublicUrl(name).data.publicUrl;
 
     await client.from("photos").insert({url,caption});
@@ -268,43 +281,45 @@ async function upload(){
 }
 
 async function loadPhotos(){
-  const {data} = await client.from("photos").select("*");
-  if(!data) return;
+  const {data}=await client.from("photos").select("*");
+  if(!data)return;
 
-  document.getElementById("feed").innerHTML =
-    data.map(p=>`
-      <img class="photo" src="${p.url}">
-    `).join("");
+  document.getElementById("feed").innerHTML=
+    data.map(p=>`<img class="photo" src="${p.url}"/>`).join("");
 }
 
-/* GAME */
+/* =====================
+   GAME
+===================== */
 let score=0;
-let time=10;
 let running=false;
 
 function startGame(){
   score=0;
-  time=10;
   running=true;
-  document.getElementById("score").innerText="Score: 0";
+  document.getElementById("score").innerText=0;
 
-  const t = setInterval(()=>{
+  let time=10;
+
+  const t=setInterval(()=>{
     time--;
     if(time<=0){
       clearInterval(t);
       running=false;
-      alert("Game over! Score: "+score);
+      alert("Score: "+score);
     }
   },1000);
 }
 
-function scoreHit(){
-  if(!running) return;
+function hit(){
+  if(!running)return;
   score++;
-  document.getElementById("score").innerText="Score: "+score;
+  document.getElementById("score").innerText=score;
 }
 
-/* INIT */
+/* =====================
+   INIT
+===================== */
 loadIdeas();
 loadPhotos();
 
