@@ -3,27 +3,30 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Platform V2</title>
+<title>Election Broadcast V3</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+
+/* =========================
+   TV BROADCAST STYLE
+========================= */
 body{
   margin:0;
   font-family:Arial;
-  background:#07070c;
+  background:#05050a;
   color:white;
+  overflow-x:hidden;
 }
 
-/* HEADER */
+/* TOP BAR */
 header{
   display:flex;
   justify-content:space-between;
   padding:12px;
   background:#111;
   border-bottom:1px solid #333;
-  position:sticky;
-  top:0;
 }
 
 .live{
@@ -38,80 +41,68 @@ header{
   white-space:nowrap;
   overflow:hidden;
   background:#1a0b2e;
-  border-bottom:1px solid #333;
+  padding:8px;
 }
 .ticker span{
   display:inline-block;
-  padding:10px;
-  animation:scroll 14s linear infinite;
+  animation:scroll 15s linear infinite;
 }
 @keyframes scroll{
   from{transform:translateX(100%)}
   to{transform:translateX(-100%)}
 }
 
-/* LAYOUT */
+/* MAIN LAYOUT */
 .container{
-  max-width:800px;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:15px;
+  padding:10px;
+  max-width:900px;
   margin:auto;
-  padding:10px;
 }
 
-/* INPUT */
-input{
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:8px;
-  border:none;
-  background:#1a1a1a;
-  color:white;
-}
-
-button{
-  background:#a855f7;
-  border:none;
-  padding:10px;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-  margin:5px 0;
-}
-
-/* CARDS */
+/* IDEA CARD */
 .card{
   background:#111;
   border:1px solid #333;
   padding:12px;
-  margin:10px 0;
   border-radius:10px;
-  transition:0.2s;
+  transition:0.3s;
 }
-.card:hover{transform:scale(1.01)}
 
 .leader{
   border:2px solid gold;
   box-shadow:0 0 20px rgba(255,215,0,0.3);
 }
 
-/* BAR */
+/* SURGE BAR (ANIMATED) */
 .bar{
-  height:10px;
+  height:14px;
   background:#222;
   border-radius:10px;
   overflow:hidden;
+  margin-top:6px;
 }
+
 .fill{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
-  transition:0.5s;
+  transition:0.6s ease;
+}
+
+/* TRENDING TAG */
+.trend{
+  color:#00ff99;
+  font-weight:bold;
+  font-size:12px;
 }
 
 /* PHOTO GRID */
 .grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:10px;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:8px;
 }
 
 .photo{
@@ -126,9 +117,20 @@ button{
   text-align:center;
   padding:20px;
 }
+
 .star{
-  font-size:50px;
+  font-size:55px;
   cursor:pointer;
+  user-select:none;
+}
+
+/* BROADCAST LOWER THIRD */
+.banner{
+  background:#000;
+  padding:10px;
+  border-top:1px solid #333;
+  text-align:center;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -136,12 +138,12 @@ button{
 <body>
 
 <header>
-  <div>🗳️ ELECTION V2</div>
-  <div class="live">🔴 LIVE</div>
+  <div>📺 ELECTION NIGHT LIVE</div>
+  <div class="live">🔴 BROADCAST</div>
 </header>
 
 <div class="ticker">
-  <span id="ticker">Loading trending ideas...</span>
+  <span id="ticker">Loading election data...</span>
 </div>
 
 <div class="container">
@@ -151,48 +153,39 @@ button{
 <button onclick="logout()">Logout</button>
 <div id="user"></div>
 
-<!-- IDEA INPUT -->
-<h3>💡 Add Idea</h3>
-<input id="ideaInput" placeholder="Your idea..."/>
-<button onclick="addIdea()">Post Idea</button>
-
 <!-- IDEAS -->
+<h3>🗳️ Live Ideas</h3>
 <div id="ideas"></div>
 
-<!-- PHOTO UPLOAD -->
-<h3>📸 Photos</h3>
-<input type="file" id="files" multiple/>
-<input id="caption" placeholder="Caption"/>
-<button onclick="upload()">Upload</button>
-
-<!-- PHOTO GRID -->
+<!-- PHOTOS -->
+<h3>📸 Supporter Feed</h3>
 <div class="grid" id="photos"></div>
 
 <!-- GAME -->
-<div class="game">
-  <h3>🎮 Click Rush</h3>
-  <button onclick="startGame()">Start</button>
-  <div class="star" onclick="hit()">⭐</div>
-  <div id="score">0</div>
+<h3>🎮 Mavric Click Game</h3>
+<button onclick="startGame()">Start 10s Challenge</button>
+<div class="star" onclick="hit()">⭐</div>
+<div id="score">0</div>
+
 </div>
 
+<div class="banner" id="banner">
+LIVE ELECTION BROADCAST MODE ACTIVE
 </div>
 
 <script>
 
-/* =====================
+/* =========================
    SUPABASE
-===================== */
+========================= */
 const supabase = window.supabase.createClient(
   "PASTE_SUPABASE_URL",
   "PASTE_SUPABASE_ANON_KEY"
 );
 
-/* =====================
-   AUTH
-===================== */
 let user=null;
 
+/* AUTH */
 async function login(){
   await supabase.auth.signInWithOAuth({provider:"google"});
 }
@@ -204,42 +197,12 @@ async function logout(){
 supabase.auth.onAuthStateChange((_,session)=>{
   user=session?.user||null;
   document.getElementById("user").innerText =
-    user ? "Logged in: "+user.email : "Not logged in";
+    user ? "Logged in: "+user.email : "Not logged out";
 });
 
-/* =====================
-   IDEAS
-===================== */
-async function addIdea(){
-  if(!user) return alert("Login required");
-
-  const text=document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await supabase.from("ideas").insert({
-    text,
-    votes:0,
-    user_email:user.email
-  });
-
-  document.getElementById("ideaInput").value="";
-}
-
-async function vote(id){
-  if(!user) return alert("Login required");
-
-  const {data}=await supabase.from("ideas")
-    .select("votes")
-    .eq("id",id)
-    .single();
-
-  await supabase.from("ideas")
-    .update({votes:(data.votes||0)+1})
-    .eq("id",id);
-
-  loadIdeas();
-}
-
+/* =========================
+   IDEAS + SURGE ENGINE
+========================= */
 async function loadIdeas(){
   const {data}=await supabase.from("ideas").select("*");
   if(!data) return;
@@ -251,65 +214,44 @@ async function loadIdeas(){
     sorted.map((i,index)=>{
       const percent=((i.votes||0)/total*100).toFixed(1);
 
+      const trending = percent > 25 ? "🔥 TRENDING" : "";
+
       return `
       <div class="card ${index===0?"leader":""}">
-        <b>${index===0?"👑 LEADER":"#"+(index+1)}</b>
+        <div>
+          ${index===0 ? "👑 LEADING IDEA" : "#"+(index+1)}
+        </div>
+
         <div>${i.text}</div>
+
+        <div class="trend">${trending}</div>
+
         <div>🗳️ ${i.votes||0}</div>
 
         <div class="bar">
           <div class="fill" style="width:${percent}%"></div>
         </div>
-
-        <button onclick="vote('${i.id}')">Vote</button>
       </div>`;
     }).join("");
 
   document.getElementById("ticker").innerText =
-    sorted.slice(0,5).map(i=>"🔥 "+i.text).join(" • ");
+    "BREAKING: " + sorted.slice(0,5).map(i=>i.text).join(" • ");
 }
 
-/* =====================
+/* =========================
    PHOTOS
-===================== */
-async function upload(){
-  if(!user) return alert("Login required");
-
-  const files=document.getElementById("files").files;
-  const caption=document.getElementById("caption").value;
-
-  for(let i=0;i<Math.min(files.length,25);i++){
-    const file=files[i];
-    const name=Date.now()+"-"+file.name;
-
-    await supabase.storage.from("campaign").upload(name,file);
-
-    const url=supabase.storage.from("campaign")
-      .getPublicUrl(name).data.publicUrl;
-
-    await supabase.from("photos").insert({
-      url,
-      caption,
-      user_email:user.email
-    });
-  }
-
-  loadPhotos();
-}
-
+========================= */
 async function loadPhotos(){
   const {data}=await supabase.from("photos").select("*");
   if(!data) return;
 
   document.getElementById("photos").innerHTML=
-    data.map(p=>`
-      <img class="photo" src="${p.url}"/>
-    `).join("");
+    data.map(p=>`<img class="photo" src="${p.url}">`).join("");
 }
 
-/* =====================
-   GAME
-===================== */
+/* =========================
+   GAME (FIXED V3)
+========================= */
 let score=0;
 let running=false;
 
@@ -320,7 +262,7 @@ function startGame(){
 
   setTimeout(()=>{
     running=false;
-    alert("Score: "+score);
+    alert("Final Score: "+score);
   },10000);
 }
 
@@ -330,9 +272,9 @@ function hit(){
   document.getElementById("score").innerText=score;
 }
 
-/* =====================
-   REALTIME (OPTIONAL BUT POWERFUL)
-===================== */
+/* =========================
+   REALTIME
+========================= */
 supabase.channel('ideas')
   .on('postgres_changes',{event:'*',schema:'public',table:'ideas'},loadIdeas)
   .subscribe();
