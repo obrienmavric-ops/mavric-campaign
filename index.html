@@ -3,26 +3,62 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Stable Fix</title>
+<title>Mavric Platform V4</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body{background:#0b0b12;color:white;font-family:Arial;text-align:center;}
-button{padding:10px;margin:10px;background:#a855f7;color:white;border:none;border-radius:8px;}
-input{padding:10px;margin:10px;border-radius:8px;border:none;background:#1a1a1a;color:white;}
-.card{background:#111;padding:10px;margin:10px;border-radius:10px;}
-.star{font-size:50px;cursor:pointer;}
+body{
+  background:#0b0b12;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+}
+
+button{
+  padding:10px;
+  margin:8px;
+  background:#a855f7;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
+
+input{
+  padding:10px;
+  margin:8px;
+  border-radius:8px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
+}
+
+.card{
+  background:#111;
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+}
+
+.star{
+  font-size:50px;
+  cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
-<h1>🗳️ MAVRIC TEST FIX</h1>
+<h1>🗳️ MAVRIC LIVE PLATFORM</h1>
+
+<div id="status">Loading...</div>
 
 <button id="loginBtn">Login</button>
 <button id="logoutBtn">Logout</button>
+
 <div id="user">Not logged in</div>
 
-<input id="ideaInput" placeholder="Idea"/>
+<input id="ideaInput" placeholder="Your idea"/>
 <button id="postBtn">Post Idea</button>
 
 <div id="ideas"></div>
@@ -34,27 +70,115 @@ input{padding:10px;margin:10px;border-radius:8px;border:none;background:#1a1a1a;
 
 <script>
 
-/* CONFIRM SCRIPT RUNS */
-alert("SCRIPT LOADED");
+/* =========================
+   SAFE SUPABASE LOAD
+========================= */
+let supabase = null;
+let user = null;
 
-/* BUTTON REFERENCES */
-const loginBtn = document.getElementById("loginBtn");
-const logoutBtn = document.getElementById("logoutBtn");
-const postBtn = document.getElementById("postBtn");
-const startBtn = document.getElementById("startBtn");
-const star = document.getElementById("star");
+function init(){
+  if(!window.supabase){
+    document.getElementById("status").innerText = "Supabase failed to load";
+    return;
+  }
 
-/* BASIC TEST HANDLERS */
-loginBtn.onclick = () => alert("Login button works");
-logoutBtn.onclick = () => alert("Logout button works");
-postBtn.onclick = () => alert("Post button works");
+  try{
+    supabase = window.supabase.createClient(
+      "PASTE_SUPABASE_URL",
+      "PASTE_SUPABASE_ANON_KEY"
+    );
 
-/* GAME */
+    document.getElementById("status").innerText = "Connected";
+
+    setupAuth();
+    setupButtons();
+    loadIdeas();
+
+  }catch(e){
+    document.getElementById("status").innerText = "Error loading";
+    console.error(e);
+  }
+}
+
+/* =========================
+   AUTH
+========================= */
+function setupAuth(){
+  supabase.auth.onAuthStateChange((_,session)=>{
+    user = session?.user || null;
+    document.getElementById("user").innerText =
+      user ? user.email : "Not logged in";
+  });
+}
+
+/* =========================
+   BUTTONS
+========================= */
+function setupButtons(){
+
+  document.getElementById("loginBtn").onclick = async () => {
+    if(!supabase) return alert("Not ready");
+    await supabase.auth.signInWithOAuth({provider:"google"});
+  };
+
+  document.getElementById("logoutBtn").onclick = async () => {
+    await supabase.auth.signOut();
+  };
+
+  document.getElementById("postBtn").onclick = async () => {
+    if(!user) return alert("Login first");
+
+    const text = document.getElementById("ideaInput").value;
+    if(!text) return;
+
+    await supabase.from("ideas").insert({text, votes:0});
+    document.getElementById("ideaInput").value="";
+    loadIdeas();
+  };
+
+  document.getElementById("startBtn").onclick = startGame;
+  document.getElementById("star").onclick = hit;
+}
+
+/* =========================
+   IDEAS
+========================= */
+async function vote(id){
+  const {data} = await supabase.from("ideas")
+    .select("votes")
+    .eq("id",id)
+    .single();
+
+  await supabase.from("ideas")
+    .update({votes:(data.votes||0)+1})
+    .eq("id",id);
+
+  loadIdeas();
+}
+
+async function loadIdeas(){
+  if(!supabase) return;
+
+  const {data} = await supabase.from("ideas").select("*");
+  if(!data) return;
+
+  document.getElementById("ideas").innerHTML =
+    data.map(i=>`
+      <div class="card">
+        ${i.text}
+        <div>🗳️ ${i.votes||0}</div>
+        <button onclick="vote('${i.id}')">Vote</button>
+      </div>
+    `).join("");
+}
+
+/* =========================
+   GAME
+========================= */
 let running=false;
 let score=0;
 
-startBtn.onclick = () => {
-  alert("Game started");
+function startGame(){
   running=true;
   score=0;
   document.getElementById("score").innerText=0;
@@ -62,14 +186,17 @@ startBtn.onclick = () => {
   setTimeout(()=>{
     running=false;
     alert("Score: "+score);
-  },5000);
-};
+  },10000);
+}
 
-star.onclick = () => {
+function hit(){
   if(!running) return;
   score++;
   document.getElementById("score").innerText=score;
-};
+}
+
+/* INIT */
+setTimeout(init,500);
 
 </script>
 
