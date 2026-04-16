@@ -3,53 +3,35 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election V3.1 FIXED</title>
+<title>Mavric Election FIXED</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{margin:0;font-family:Arial;background:#05050a;color:white;}
 header{display:flex;justify-content:space-between;padding:12px;background:#111;}
-.live{color:red;animation:blink 1s infinite;}
-@keyframes blink{50%{opacity:0.3}}
-
-.container{padding:10px;max-width:800px;margin:auto;}
-
-button{padding:10px;margin:5px;background:#a855f7;border:none;border-radius:8px;color:white;cursor:pointer;}
+button{padding:10px;margin:5px;background:#a855f7;border:none;border-radius:8px;color:white;}
 input{padding:10px;width:100%;margin:5px 0;border-radius:8px;border:none;background:#1a1a1a;color:white;}
-
 .card{background:#111;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #333;}
-.leader{border:2px solid gold;}
-
-.bar{height:10px;background:#222;border-radius:10px;}
-.fill{height:100%;background:linear-gradient(90deg,#a855f7,gold);}
-
 .star{font-size:50px;cursor:pointer;text-align:center;}
-
-#error{
-  color:red;
-  text-align:center;
-  padding:10px;
-}
+#error{color:red;text-align:center;padding:10px;}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div>📺 LIVE ELECTION</div>
-  <div class="live">🔴 LIVE</div>
+  <div>🗳️ MAVRIC LIVE</div>
+  <div>🔴 LIVE</div>
 </header>
 
 <div id="error"></div>
 
-<div class="container">
-
 <button onclick="login()">Login</button>
 <button onclick="logout()">Logout</button>
-<div id="user"></div>
+<div id="user">Not logged in</div>
 
-<input id="ideaInput" placeholder="Idea"/>
+<input id="ideaInput" placeholder="Enter idea"/>
 <button onclick="addIdea()">Post Idea</button>
 
 <div id="ideas"></div>
@@ -59,24 +41,22 @@ input{padding:10px;width:100%;margin:5px 0;border-radius:8px;border:none;backgro
 <div class="star" onclick="hit()">⭐</div>
 <div id="score">0</div>
 
-</div>
-
 <script>
 
-/* SAFE INIT */
+/* SAFE LOAD */
 let supabase;
-try {
+
+if(window.supabase){
   supabase = window.supabase.createClient(
     "PASTE_SUPABASE_URL",
     "PASTE_SUPABASE_ANON_KEY"
   );
-} catch(e){
+}else{
   document.getElementById("error").innerText =
     "Supabase failed to load.";
-  console.error(e);
 }
 
-/* GLOBAL ERROR HANDLER */
+/* GLOBAL ERROR DISPLAY */
 window.onerror = function(msg){
   document.getElementById("error").innerText = msg;
 };
@@ -84,17 +64,13 @@ window.onerror = function(msg){
 /* AUTH */
 let user=null;
 
-async function login(){
-  try{
-    await supabase.auth.signInWithOAuth({provider:"google"});
-  }catch(e){
-    alert("Login failed");
-    console.error(e);
-  }
+function login(){
+  if(!supabase) return alert("Supabase not ready");
+  supabase.auth.signInWithOAuth({provider:"google"});
 }
 
-async function logout(){
-  await supabase.auth.signOut();
+function logout(){
+  supabase.auth.signOut();
 }
 
 supabase?.auth.onAuthStateChange((_,session)=>{
@@ -110,11 +86,7 @@ async function addIdea(){
   const text=document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await supabase.from("ideas").insert({
-    text,
-    votes:0
-  });
-
+  await supabase.from("ideas").insert({text,votes:0});
   loadIdeas();
 }
 
@@ -132,26 +104,22 @@ async function vote(id){
 }
 
 async function loadIdeas(){
-  try{
-    const {data}=await supabase.from("ideas").select("*");
-    if(!data) return;
+  if(!supabase) return;
 
-    const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const {data}=await supabase.from("ideas").select("*");
+  if(!data) return;
 
-    document.getElementById("ideas").innerHTML=
-      sorted.map((i,index)=>`
-        <div class="card ${index===0?"leader":""}">
-          ${i.text}
-          <div>${i.votes||0}</div>
-          <button onclick="vote('${i.id}')">Vote</button>
-        </div>
-      `).join("");
-  }catch(e){
-    console.error(e);
-  }
+  document.getElementById("ideas").innerHTML =
+    data.map(i=>`
+      <div class="card">
+        ${i.text}
+        <div>${i.votes||0}</div>
+        <button onclick="vote('${i.id}')">Vote</button>
+      </div>
+    `).join("");
 }
 
-/* GAME FIX */
+/* GAME (FIXED) */
 let running=false;
 let score=0;
 
@@ -173,7 +141,7 @@ function hit(){
 }
 
 /* INIT */
-loadIdeas();
+setTimeout(loadIdeas,500);
 
 </script>
 
