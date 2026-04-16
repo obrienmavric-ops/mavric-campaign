@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election Platform</title>
+<title>Election Platform V2</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -11,26 +11,26 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0b0b12;
+  background:#07070c;
   color:white;
 }
 
 /* HEADER */
 header{
-  position:sticky;
-  top:0;
-  background:#111;
-  padding:12px;
   display:flex;
   justify-content:space-between;
+  padding:12px;
+  background:#111;
   border-bottom:1px solid #333;
+  position:sticky;
+  top:0;
 }
 
 .live{
   color:red;
+  font-weight:bold;
   animation:blink 1s infinite;
 }
-
 @keyframes blink{50%{opacity:0.3}}
 
 /* TICKER */
@@ -50,31 +50,32 @@ header{
   to{transform:translateX(-100%)}
 }
 
-/* CENTER */
-.center{
-  text-align:center;
+/* LAYOUT */
+.container{
+  max-width:800px;
+  margin:auto;
   padding:10px;
+}
+
+/* INPUT */
+input{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:8px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
 }
 
 button{
   background:#a855f7;
   border:none;
   padding:10px;
-  margin:5px;
   border-radius:8px;
   color:white;
   cursor:pointer;
-}
-
-input{
-  padding:10px;
-  width:90%;
-  max-width:400px;
-  border-radius:8px;
-  border:none;
-  margin:5px;
-  background:#1a1a1a;
-  color:white;
+  margin:5px 0;
 }
 
 /* CARDS */
@@ -82,13 +83,15 @@ input{
   background:#111;
   border:1px solid #333;
   padding:12px;
-  margin:10px auto;
-  max-width:600px;
+  margin:10px 0;
   border-radius:10px;
+  transition:0.2s;
 }
+.card:hover{transform:scale(1.01)}
 
 .leader{
   border:2px solid gold;
+  box-shadow:0 0 20px rgba(255,215,0,0.3);
 }
 
 /* BAR */
@@ -101,6 +104,7 @@ input{
 .fill{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
+  transition:0.5s;
 }
 
 /* PHOTO GRID */
@@ -108,7 +112,6 @@ input{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
   gap:10px;
-  padding:10px;
 }
 
 .photo{
@@ -123,7 +126,6 @@ input{
   text-align:center;
   padding:20px;
 }
-
 .star{
   font-size:50px;
   cursor:pointer;
@@ -134,7 +136,7 @@ input{
 <body>
 
 <header>
-  <div>🗳️ ELECTION LIVE</div>
+  <div>🗳️ ELECTION V2</div>
   <div class="live">🔴 LIVE</div>
 </header>
 
@@ -142,46 +144,55 @@ input{
   <span id="ticker">Loading trending ideas...</span>
 </div>
 
-<div class="center">
-  <button onclick="login()">Login with Google</button>
-  <button onclick="logout()">Logout</button>
-  <div id="user"></div>
-</div>
+<div class="container">
 
-<div class="center">
-  <input id="ideaInput" placeholder="Add idea..."/>
-  <button onclick="addIdea()">Post</button>
-</div>
+<!-- AUTH -->
+<button onclick="login()">Login with Google</button>
+<button onclick="logout()">Logout</button>
+<div id="user"></div>
 
+<!-- IDEA INPUT -->
+<h3>💡 Add Idea</h3>
+<input id="ideaInput" placeholder="Your idea..."/>
+<button onclick="addIdea()">Post Idea</button>
+
+<!-- IDEAS -->
 <div id="ideas"></div>
 
-<div class="center">
-  <h2>📸 Photo Wall</h2>
-  <input type="file" id="files" multiple/>
-  <input id="caption" placeholder="caption"/>
-  <button onclick="upload()">Upload</button>
-</div>
+<!-- PHOTO UPLOAD -->
+<h3>📸 Photos</h3>
+<input type="file" id="files" multiple/>
+<input id="caption" placeholder="Caption"/>
+<button onclick="upload()">Upload</button>
 
+<!-- PHOTO GRID -->
 <div class="grid" id="photos"></div>
 
+<!-- GAME -->
 <div class="game">
-  <h2>🎮 Mavric Click Game</h2>
+  <h3>🎮 Click Rush</h3>
   <button onclick="startGame()">Start</button>
   <div class="star" onclick="hit()">⭐</div>
-  <h3 id="score">0</h3>
+  <div id="score">0</div>
+</div>
+
 </div>
 
 <script>
 
-/* 🔐 SUPABASE (FILL THESE) */
+/* =====================
+   SUPABASE
+===================== */
 const supabase = window.supabase.createClient(
-  "https://mavric-campaign.vercel.app/#",
-  "sb_publishable_dyXZ9ewS0jo0SxQmX8i36g_nM0kOniSY"
+  "PASTE_SUPABASE_URL",
+  "PASTE_SUPABASE_ANON_KEY"
 );
 
+/* =====================
+   AUTH
+===================== */
 let user=null;
 
-/* LOGIN */
 async function login(){
   await supabase.auth.signInWithOAuth({provider:"google"});
 }
@@ -196,31 +207,42 @@ supabase.auth.onAuthStateChange((_,session)=>{
     user ? "Logged in: "+user.email : "Not logged in";
 });
 
-/* IDEAS */
+/* =====================
+   IDEAS
+===================== */
 async function addIdea(){
-  if(!user){alert("Login required");return;}
+  if(!user) return alert("Login required");
 
   const text=document.getElementById("ideaInput").value;
-  if(!text)return;
+  if(!text) return;
 
   await supabase.from("ideas").insert({
     text,
     votes:0,
-    user:user.email
+    user_email:user.email
   });
 
   document.getElementById("ideaInput").value="";
 }
 
-async function vote(id,v){
+async function vote(id){
+  if(!user) return alert("Login required");
+
+  const {data}=await supabase.from("ideas")
+    .select("votes")
+    .eq("id",id)
+    .single();
+
   await supabase.from("ideas")
-    .update({votes:v+1})
+    .update({votes:(data.votes||0)+1})
     .eq("id",id);
+
+  loadIdeas();
 }
 
 async function loadIdeas(){
   const {data}=await supabase.from("ideas").select("*");
-  if(!data)return;
+  if(!data) return;
 
   const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
   const total=Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
@@ -231,24 +253,27 @@ async function loadIdeas(){
 
       return `
       <div class="card ${index===0?"leader":""}">
-        <b>#${index+1}</b> 💡 ${i.text}
+        <b>${index===0?"👑 LEADER":"#"+(index+1)}</b>
+        <div>${i.text}</div>
         <div>🗳️ ${i.votes||0}</div>
 
         <div class="bar">
           <div class="fill" style="width:${percent}%"></div>
         </div>
 
-        <button onclick="vote('${i.id}',${i.votes||0})">Vote</button>
+        <button onclick="vote('${i.id}')">Vote</button>
       </div>`;
     }).join("");
 
   document.getElementById("ticker").innerText =
-    sorted.slice(0,5).map(i=>i.text).join(" 🔥 ");
+    sorted.slice(0,5).map(i=>"🔥 "+i.text).join(" • ");
 }
 
-/* PHOTOS */
+/* =====================
+   PHOTOS
+===================== */
 async function upload(){
-  if(!user){alert("Login required");return;}
+  if(!user) return alert("Login required");
 
   const files=document.getElementById("files").files;
   const caption=document.getElementById("caption").value;
@@ -262,7 +287,11 @@ async function upload(){
     const url=supabase.storage.from("campaign")
       .getPublicUrl(name).data.publicUrl;
 
-    await supabase.from("photos").insert({url,caption});
+    await supabase.from("photos").insert({
+      url,
+      caption,
+      user_email:user.email
+    });
   }
 
   loadPhotos();
@@ -270,13 +299,17 @@ async function upload(){
 
 async function loadPhotos(){
   const {data}=await supabase.from("photos").select("*");
-  if(!data)return;
+  if(!data) return;
 
   document.getElementById("photos").innerHTML=
-    data.map(p=>`<img class="photo" src="${p.url}">`).join("");
+    data.map(p=>`
+      <img class="photo" src="${p.url}"/>
+    `).join("");
 }
 
-/* GAME */
+/* =====================
+   GAME
+===================== */
 let score=0;
 let running=false;
 
@@ -292,15 +325,26 @@ function startGame(){
 }
 
 function hit(){
-  if(!running)return;
+  if(!running) return;
   score++;
   document.getElementById("score").innerText=score;
 }
 
+/* =====================
+   REALTIME (OPTIONAL BUT POWERFUL)
+===================== */
+supabase.channel('ideas')
+  .on('postgres_changes',{event:'*',schema:'public',table:'ideas'},loadIdeas)
+  .subscribe();
+
+supabase.channel('photos')
+  .on('postgres_changes',{event:'*',schema:'public',table:'photos'},loadPhotos)
+  .subscribe();
+
 /* INIT */
 loadIdeas();
 loadPhotos();
-setInterval(loadIdeas,3000);
+setInterval(loadIdeas,4000);
 
 </script>
 
