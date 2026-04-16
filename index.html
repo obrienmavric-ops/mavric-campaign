@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election Platform</title>
+<title>Election Night Platform</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -30,9 +30,15 @@ header{
   font-weight:bold;
   animation:blink 1s infinite;
 }
+
 @keyframes blink{50%{opacity:0.3}}
 
-/* INPUTS */
+/* CENTER INPUT AREA */
+.center{
+  text-align:center;
+  padding:10px;
+}
+
 input{
   width:90%;
   max-width:400px;
@@ -48,13 +54,13 @@ button{
   padding:10px;
   margin:5px;
   background:#a855f7;
-  color:white;
   border:none;
+  color:white;
   border-radius:8px;
   cursor:pointer;
 }
 
-/* BOARD */
+/* IDEAS */
 .card{
   background:#111;
   border:1px solid #333;
@@ -75,6 +81,7 @@ button{
   border-radius:10px;
   overflow:hidden;
 }
+
 .fill{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
@@ -100,6 +107,7 @@ button{
   text-align:center;
   padding:20px;
 }
+
 .target{
   font-size:50px;
   cursor:pointer;
@@ -111,29 +119,29 @@ button{
 <body>
 
 <header>
-  <div>🗳️ MAVRIC ELECTION LIVE</div>
+  <div>🗳️ MAVRIC ELECTION PLATFORM</div>
   <div class="live">🔴 LIVE</div>
 </header>
 
 <!-- LOGIN -->
-<div style="text-align:center;padding:10px;">
+<div class="center">
   <button onclick="login()">Login with Google</button>
   <button onclick="logout()">Logout</button>
   <div id="user"></div>
 </div>
 
 <!-- IDEA INPUT -->
-<div style="text-align:center;">
-  <input id="ideaInput" placeholder="Share your idea..."/>
+<div class="center">
+  <input id="ideaInput" placeholder="Add your idea..."/>
   <button onclick="addIdea()">Post Idea</button>
 </div>
 
-<!-- BOARD -->
+<!-- IDEAS -->
 <div id="ideas"></div>
 
 <!-- PHOTOS -->
-<div style="text-align:center;">
-  <h3>📸 Supporter Wall</h3>
+<div class="center">
+  <h3>📸 Supporter Photos</h3>
   <input type="file" id="files" multiple/>
   <input id="caption" placeholder="Caption"/>
   <button onclick="upload()">Upload</button>
@@ -151,28 +159,41 @@ button{
 
 <script>
 
-/* SUPABASE */
+/* =====================
+   SUPABASE
+===================== */
 const client = supabase.createClient(
   "https://didfhlfvdvurkfwbipli.supabase.co",
   "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
 );
 
-/* AUTH */
-let user=null;
+/* =====================
+   AUTH (FIXED)
+===================== */
+let user = null;
+
+client.auth.getSession().then(({ data }) => {
+  user = data.session?.user || null;
+  updateUser();
+});
+
+client.auth.onAuthStateChange((_, session) => {
+  user = session?.user || null;
+  updateUser();
+});
+
+function updateUser(){
+  document.getElementById("user").innerText =
+    user ? `Logged in: ${user.email}` : "Not logged in";
+}
 
 async function login(){
-  await client.auth.signInWithOAuth({provider:"google"});
+  await client.auth.signInWithOAuth({ provider: "google" });
 }
 
 async function logout(){
   await client.auth.signOut();
 }
-
-client.auth.onAuthStateChange((_,session)=>{
-  user=session?.user||null;
-  document.getElementById("user").innerText =
-    user ? "Logged in: "+user.email : "Not logged in";
-});
 
 /* =====================
    IDEAS
@@ -180,12 +201,12 @@ client.auth.onAuthStateChange((_,session)=>{
 
 async function addIdea(){
   if(!user){
-    alert("Login required");
+    alert("You must log in");
     return;
   }
 
-  const text=document.getElementById("ideaInput").value;
-  if(!text)return;
+  const text = document.getElementById("ideaInput").value;
+  if(!text) return;
 
   await client.from("ideas").insert({
     text,
@@ -197,43 +218,51 @@ async function addIdea(){
   loadIdeas();
 }
 
-/* 🔐 LOGIN-LOCKED VOTING */
-async function vote(id, votes, voters){
+/* 🔐 LOGIN-LOCKED VOTING (FIXED) */
+async function vote(id, votes, voters = []){
 
   if(!user){
-    alert("You must log in to vote");
+    alert("Login required to vote");
     return;
   }
 
   const uid = user.id;
 
-  if(voters?.includes(uid)){
-    alert("You already voted on this idea");
+  const safeVoters = Array.isArray(voters) ? voters : [];
+
+  if(safeVoters.includes(uid)){
+    alert("You already voted");
     return;
   }
 
-  const newVoters = voters ? [...voters, uid] : [uid];
+  const updated = [...safeVoters, uid];
 
-  await client.from("ideas")
+  const { error } = await client.from("ideas")
     .update({
       votes: votes + 1,
-      voters: newVoters
+      voters: updated
     })
     .eq("id", id);
+
+  if(error){
+    console.log(error);
+    alert("Vote failed (check Supabase RLS)");
+    return;
+  }
 
   loadIdeas();
 }
 
 async function loadIdeas(){
-  const {data}=await client.from("ideas").select("*");
-  if(!data)return;
+  const {data} = await client.from("ideas").select("*");
+  if(!data) return;
 
-  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total=Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
+  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total = Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
 
-  document.getElementById("ideas").innerHTML=
+  document.getElementById("ideas").innerHTML =
     sorted.map((i,index)=>{
-      const percent=((i.votes||0)/total*100).toFixed(1);
+      const percent = ((i.votes||0)/total*100).toFixed(1);
 
       return `
         <div class="card ${index===0?"leader":""}">
@@ -244,7 +273,7 @@ async function loadIdeas(){
             <div class="fill" style="width:${percent}%"></div>
           </div>
 
-          <button onclick="vote('${i.id}',${i.votes||0},${JSON.stringify(i.voters||[])})">
+          <button onclick='vote("${i.id}",${i.votes||0},${JSON.stringify(i.voters||[])})'>
             Vote
           </button>
         </div>
