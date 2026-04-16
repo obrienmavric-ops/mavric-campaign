@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mavric Campaign - Election Night</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 
-/* ===== BACKGROUND ===== */
+/* =========================
+   BASE
+========================= */
 body{
   margin:0;
   font-family:Arial;
@@ -15,85 +20,155 @@ body{
   overflow-x:hidden;
 }
 
-/* animated gradient */
+/* =========================
+   CINEMATIC BACKGROUND
+========================= */
 .bg{
   position:fixed;
   inset:0;
-  background:linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d);
+  z-index:-3;
+  background:linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d,#0b0b0f);
   background-size:300% 300%;
-  animation:bgMove 12s infinite;
-  z-index:-2;
-}
-@keyframes bgMove{
-  0%{background-position:0%}
-  50%{background-position:100%}
-  100%{background-position:0%}
+  animation:move 12s ease infinite;
 }
 
-/* particles */
-canvas#particles{
+@keyframes move{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+.glow{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(168,85,247,0.25), transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(255,215,0,0.07), transparent 40%);
+}
+
+canvas{
   position:fixed;
   inset:0;
   z-index:-1;
+  pointer-events:none;
 }
 
-/* intro */
-#intro{
-  position:fixed;
-  inset:0;
-  background:#0b0b0f;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:40px;
+/* =========================
+   HEADER
+========================= */
+header{
+  padding:14px;
+  text-align:center;
+  background:#111;
   color:#a855f7;
-  z-index:999;
-  animation:fadeOut 2.5s forwards;
-}
-@keyframes fadeOut{
-  80%{opacity:1}
-  100%{opacity:0;visibility:hidden}
+  font-weight:bold;
+  position:sticky;
+  top:0;
 }
 
-/* glass */
-.glass{
-  background:rgba(255,255,255,0.05);
-  backdrop-filter:blur(10px);
-  margin:20px;
+/* =========================
+   HERO
+========================= */
+.hero{
+  text-align:center;
+  padding:25px;
+}
+
+.slogan{
+  color:#a855f7;
+  font-weight:bold;
+}
+
+/* =========================
+   SECTIONS
+========================= */
+.section{
   padding:20px;
-  border-radius:15px;
-  max-width:700px;
+  text-align:center;
 }
 
-/* button */
+/* =========================
+   INPUTS
+========================= */
+input, button{
+  width:90%;
+  max-width:360px;
+  padding:10px;
+  margin:6px;
+  border-radius:8px;
+  border:none;
+}
+
+input{
+  background:#1a1a1a;
+  color:white;
+  border:1px solid #333;
+}
+
 button{
   background:#a855f7;
-  border:none;
-  padding:10px;
-  border-radius:8px;
   color:white;
+  cursor:pointer;
 }
 
-/* images */
+/* =========================
+   ELECTION BOARD
+========================= */
+.board{
+  max-width:650px;
+  margin:auto;
+}
+
+.card{
+  background:#111;
+  border:1px solid #333;
+  padding:12px;
+  margin:10px 0;
+  border-radius:10px;
+  text-align:left;
+  transition:0.3s;
+}
+
+.leader{
+  border:1px solid gold;
+  box-shadow:0 0 15px rgba(255,215,0,0.3);
+}
+
+.bar{
+  height:10px;
+  background:#222;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.fill{
+  height:100%;
+  background:linear-gradient(90deg,#a855f7,gold);
+  width:0%;
+  transition:0.8s ease;
+}
+
+.rank{
+  font-weight:bold;
+  color:gold;
+}
+
+/* =========================
+   FEED
+========================= */
 .feed{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
   gap:10px;
 }
+
 .feed img{
   width:100%;
-  height:150px;
+  height:140px;
   object-fit:cover;
-  border-radius:10px;
-}
-
-/* bars */
-.bar{height:10px;background:#222;border-radius:10px}
-.fill{height:100%;background:linear-gradient(90deg,#a855f7,gold)}
-
-canvas#game{
-  background:#111;
-  border-radius:10px;
+  border-radius:8px;
 }
 
 </style>
@@ -101,250 +176,246 @@ canvas#game{
 
 <body>
 
-<div id="intro">MAVRIC</div>
 <div class="bg"></div>
-<canvas id="particles"></canvas>
+<div class="glow"></div>
+<canvas id="c"></canvas>
 
-<div class="glass">
-<button onclick="login()">Login</button>
-<button onclick="logout()">Logout</button>
-<div id="user"></div>
+<header>🗳️ ELECTION NIGHT - MAVRIC CAMPAIGN</header>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>LIVE RESULTS</h1>
+  <div class="slogan">Your Voice, My Actions.</div>
 </div>
 
-<div class="glass">
-<h1>Your Voice, My Actions.</h1>
-<h3 id="countdown"></h3>
+<!-- TIMER -->
+<div class="section">
+  <h2>Countdown</h2>
+  <div id="timer"></div>
 </div>
 
-<div class="glass">
-<h2>Mission Statement</h2>
-<p>
-My mission is to turn student ideas into real action.
-I believe every student deserves to be heard and taken seriously.
-This campaign is built on transparency, accountability, and results.
-Together, we can create a school environment that reflects what students actually want.
-Your voice matters — and I will make sure it leads to real change.
-</p>
+<!-- IDEAS -->
+<div class="section">
+  <h2>Live Election Board</h2>
+  <input id="ideaInput" placeholder="Add idea"/>
+  <button onclick="addIdea()">Post</button>
+
+  <div id="ideas" class="board"></div>
 </div>
 
-<div class="glass">
-<h2>🔥 Trending Ideas</h2>
-<div id="ideas"></div>
-</div>
+<!-- UPLOAD -->
+<div class="section">
+  <h2>Supporter Photos</h2>
+  <input type="file" id="files" multiple>
+  <input id="caption" placeholder="Caption">
+  <button onclick="upload()">Upload (max 25)</button>
 
-<div class="glass">
-<h2>📸 Photos</h2>
-<input type="file" id="files" multiple>
-<button onclick="upload()">Upload</button>
-<div id="feed" class="feed"></div>
-</div>
-
-<div class="glass">
-<h2>🎮 Game</h2>
-<button onclick="startGame()">Start</button>
-<h3 id="score">Score: 0</h3>
-<canvas id="game" width="320" height="400"></canvas>
+  <div class="feed" id="feed"></div>
 </div>
 
 <script>
 
-/* ===== SUPABASE ===== */
-const client = supabase.createClient("https://didfhlfvdvurkfwbipli.supabase.co","sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0");
+/* =========================
+   SUPABASE
+========================= */
+const client = supabase.createClient(
+  "https://didfhlfvdvurkfwbipli.supabase.co",
+  "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+);
 
-let currentUser=null;
+/* =========================
+   SETTINGS
+========================= */
+const UPLOAD_PASSWORD = "mavric123";
 
-function getName(u){
-  return (u.user_metadata?.full_name||u.email).split(" ")[0];
+/* =========================
+   TIMER
+========================= */
+const end = new Date("2026-04-24");
+
+function timer(){
+  const diff = end - new Date();
+  const el = document.getElementById("timer");
+
+  const d = Math.floor(diff/86400000);
+  el.innerHTML = diff > 0 ? `${d} days left` : "VOTING DAY";
 }
 
-async function login(){
-  await client.auth.signInWithOAuth({provider:'google'});
+/* =========================
+   VOTING (1 PER PERSON PER IDEA)
+========================= */
+function voted(id){
+  return localStorage.getItem("v_"+id)==="1";
 }
 
-async function logout(){
-  await client.auth.signOut();
-  location.reload();
+function mark(id){
+  localStorage.setItem("v_"+id,"1");
 }
 
-async function getUser(){
-  const {data}=await client.auth.getUser();
-  currentUser=data.user;
-  document.getElementById("user").innerText=
-    currentUser?"Hi "+getName(currentUser):"Not logged in";
+async function vote(id,votes){
+
+  if(voted(id)){
+    alert("Already voted");
+    return;
+  }
+
+  await client.from("ideas")
+    .update({votes:votes+1})
+    .eq("id",id);
+
+  mark(id);
+  loadIdeas();
 }
-getUser();
 
-/* ===== COUNTDOWN ===== */
-const end=new Date();
-end.setDate(end.getDate()+3);
-
-setInterval(()=>{
-  const diff=end-new Date();
-  const h=Math.floor(diff/1000/60/60);
-  document.getElementById("countdown").innerText="Ends in "+h+"h";
-},1000);
-
-/* ===== IDEAS ===== */
+/* =========================
+   LIVE ELECTION BOARD
+========================= */
 async function loadIdeas(){
-  const {data}=await client.from("ideas").select("*");
 
-  data.sort((a,b)=>b.votes-a.votes);
+  const {data} = await client.from("ideas").select("*");
+  if(!data) return;
 
-  const total=data.reduce((a,b)=>a+(b.votes||0),0)||1;
+  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
 
-  document.getElementById("ideas").innerHTML=
-    data.map(i=>{
-      const pct=((i.votes||0)/total*100).toFixed(1);
+  document.getElementById("ideas").innerHTML =
+    sorted.map((i,index)=>{
+
+      const percent = ((i.votes||0)/total*100).toFixed(1);
+
       return `
-        <div>
-          💡 ${i.text}<br>
-          👤 ${i.user}<br>
-          🗳️ ${i.votes}
-          <div class="bar">
-            <div class="fill" style="width:${pct}%"></div>
+        <div class="card ${index===0?"leader":""}">
+          
+          <div>
+            <span class="rank">#${index+1}</span>
+            💡 ${i.text}
           </div>
-        </div>`;
+
+          <div>🗳️ ${i.votes||0} (${percent}%)</div>
+
+          <div class="bar">
+            <div class="fill" style="width:${percent}%"></div>
+          </div>
+
+          <button onclick="vote('${i.id}',${i.votes||0})">
+            Vote
+          </button>
+
+        </div>
+      `;
     }).join("");
 }
-loadIdeas();
 
-/* ===== PHOTOS ===== */
-const PASSWORD="mavric123";
+/* =========================
+   ADD IDEA
+========================= */
+async function addIdea(){
+  const text=document.getElementById("ideaInput").value;
+  if(!text) return;
 
+  await client.from("ideas").insert({text,votes:0});
+  document.getElementById("ideaInput").value="";
+  loadIdeas();
+}
+
+/* =========================
+   UPLOAD (PASSWORD + 25)
+========================= */
 async function upload(){
-  if(prompt("Password")!==PASSWORD)return;
 
-  const files=document.getElementById("files").files;
-
-  for(let i=0;i<Math.min(files.length,25);i++){
-    const name=Date.now()+files[i].name;
-
-    await client.storage.from("campaign").upload(name,files[i]);
-
-    const {data}=client.storage.from("campaign").getPublicUrl(name);
-
-    await client.from("photos").insert({url:data.publicUrl});
+  const pw = prompt("Upload password:");
+  if(pw !== UPLOAD_PASSWORD){
+    alert("Wrong password");
+    return;
   }
+
+  const files = document.getElementById("files").files;
+  const caption = document.getElementById("caption").value;
+
+  const limit = Math.min(files.length,25);
+
+  for(let i=0;i<limit;i++){
+
+    const file = files[i];
+    const name = Date.now()+"-"+file.name;
+
+    await client.storage.from("campaign").upload(name,file);
+
+    const url = client.storage.from("campaign")
+      .getPublicUrl(name).data.publicUrl;
+
+    await client.from("photos").insert({
+      url,
+      caption
+    });
+  }
+
   loadPhotos();
 }
 
+/* =========================
+   PHOTOS
+========================= */
 async function loadPhotos(){
-  const {data}=await client.from("photos").select("*");
+  const {data} = await client.from("photos").select("*");
+  if(!data) return;
 
-  document.getElementById("feed").innerHTML=
-    data.map(p=>`<img src="${p.url}" onerror="this.remove()">`).join("");
+  document.getElementById("feed").innerHTML =
+    data.map(p=>`
+      <img src="${p.url}">
+    `).join("");
 }
+
+/* =========================
+   PARTICLES
+========================= */
+const c=document.getElementById("c");
+const x=c.getContext("2d");
+
+c.width=innerWidth;
+c.height=innerHeight;
+
+let p=[];
+
+for(let i=0;i<50;i++){
+  p.push({
+    x:Math.random()*c.width,
+    y:Math.random()*c.height,
+    r:Math.random()*2,
+    dx:(Math.random()-0.5)*0.3,
+    dy:(Math.random()-0.5)*0.3
+  });
+}
+
+function animate(){
+  x.clearRect(0,0,c.width,c.height);
+
+  for(let i of p){
+    x.beginPath();
+    x.arc(i.x,i.y,i.r,0,Math.PI*2);
+    x.fillStyle="rgba(168,85,247,0.4)";
+    x.fill();
+
+    i.x+=i.dx;
+    i.y+=i.dy;
+
+    if(i.x<0||i.x>c.width) i.dx*=-1;
+    if(i.y<0||i.y>c.height) i.dy*=-1;
+  }
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+
+/* =========================
+   INIT
+========================= */
+loadIdeas();
 loadPhotos();
+timer();
 
-/* ===== GAME ===== */
-const c=document.getElementById("game");
-const ctx=c.getContext("2d");
-
-let items=[],particles=[];
-let score=0,combo=0,running=false,mult=1;
-
-function startGame(){
-  items=[];particles=[];
-  score=0;combo=0;mult=1;
-  running=true;
-  spawn();loop();
-}
-
-function spawn(){
-  if(!running)return;
-
-  let type="vote";
-  const r=Math.random();
-  if(r>0.9) type="x2";
-
-  items.push({x:Math.random()*300,y:0,type,speed:2});
-
-  setTimeout(spawn,700);
-}
-
-c.addEventListener("pointerdown",e=>{
-  if(!running)return;
-
-  const rect=c.getBoundingClientRect();
-  const mx=e.clientX-rect.left;
-  const my=e.clientY-rect.top;
-
-  items=items.filter(i=>{
-    const hit=Math.abs(mx-i.x)<20 && Math.abs(my-i.y)<20;
-
-    if(hit){
-      if(i.type==="x2"){
-        mult=2;
-        setTimeout(()=>mult=1,4000);
-      }else{
-        combo++;
-        score+=combo*mult;
-      }
-
-      for(let j=0;j<6;j++){
-        particles.push({x:mx,y:my,dx:Math.random()-0.5,dy:Math.random()-0.5,life:20});
-      }
-
-      document.getElementById("score").innerText=
-        "Score "+score+" Combo "+combo+" x"+mult;
-    }
-
-    return !hit;
-  });
-});
-
-function loop(){
-  if(!running)return;
-
-  ctx.clearRect(0,0,320,400);
-
-  items.forEach(i=>{
-    i.y+=i.speed;
-    ctx.fillText(i.type==="x2"?"⚡":"🗳️",i.x,i.y);
-
-    if(i.y>400){
-      combo=0;
-      i.y=-20;
-    }
-  });
-
-  particles.forEach(p=>{
-    p.x+=p.dx*3;
-    p.y+=p.dy*3;
-    p.life--;
-    ctx.fillStyle="gold";
-    ctx.fillRect(p.x,p.y,2,2);
-  });
-
-  particles=particles.filter(p=>p.life>0);
-
-  requestAnimationFrame(loop);
-}
-
-/* ===== PARTICLES BG ===== */
-const pc=document.getElementById("particles");
-const pctx=pc.getContext("2d");
-pc.width=window.innerWidth;
-pc.height=window.innerHeight;
-
-let dots=Array.from({length:50},()=>({
-  x:Math.random()*pc.width,
-  y:Math.random()*pc.height,
-  dx:Math.random()-0.5,
-  dy:Math.random()-0.5
-}));
-
-function animateBG(){
-  pctx.clearRect(0,0,pc.width,pc.height);
-  dots.forEach(d=>{
-    d.x+=d.dx;
-    d.y+=d.dy;
-    pctx.fillStyle="#a855f7";
-    pctx.fillRect(d.x,d.y,2,2);
-  });
-  requestAnimationFrame(animateBG);
-}
-animateBG();
+setInterval(timer,1000);
 
 </script>
 
