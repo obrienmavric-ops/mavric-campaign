@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Platform Stable</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Mavric Stable Fix</title>
 
 <style>
 body{background:#0b0b12;color:white;font-family:Arial;text-align:center;}
@@ -13,133 +11,50 @@ button{padding:10px;margin:10px;background:#a855f7;color:white;border:none;borde
 input{padding:10px;margin:10px;border-radius:8px;border:none;background:#1a1a1a;color:white;}
 .card{background:#111;padding:10px;margin:10px;border-radius:10px;}
 .star{font-size:50px;cursor:pointer;}
-#error{color:red;}
 </style>
 </head>
 
 <body>
 
-<h1>🗳️ MAVRIC LIVE</h1>
+<h1>🗳️ MAVRIC TEST FIX</h1>
 
-<div id="error"></div>
-
-<button onclick="login()">Login</button>
-<button onclick="logout()">Logout</button>
+<button id="loginBtn">Login</button>
+<button id="logoutBtn">Logout</button>
 <div id="user">Not logged in</div>
 
 <input id="ideaInput" placeholder="Idea"/>
-<button onclick="addIdea()">Post Idea</button>
+<button id="postBtn">Post Idea</button>
 
 <div id="ideas"></div>
 
 <h2>🎮 Game</h2>
-<button onclick="startGame()">Start</button>
-<div class="star" onclick="hit()">⭐</div>
+<button id="startBtn">Start</button>
+<div class="star" id="star">⭐</div>
 <div id="score">0</div>
 
 <script>
 
-/* SAFE INIT */
-let supabase = null;
+/* CONFIRM SCRIPT RUNS */
+alert("SCRIPT LOADED");
 
-function initSupabase(){
-  try{
-    if(window.supabase){
-      supabase = window.supabase.createClient(
-        "PASTE_SUPABASE_URL",
-        "PASTE_SUPABASE_ANON_KEY"
-      );
-      console.log("Supabase loaded");
-    }else{
-      throw new Error("Supabase script missing");
-    }
-  }catch(e){
-    document.getElementById("error").innerText = e.message;
-    console.error(e);
-  }
-}
+/* BUTTON REFERENCES */
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const postBtn = document.getElementById("postBtn");
+const startBtn = document.getElementById("startBtn");
+const star = document.getElementById("star");
 
-initSupabase();
+/* BASIC TEST HANDLERS */
+loginBtn.onclick = () => alert("Login button works");
+logoutBtn.onclick = () => alert("Logout button works");
+postBtn.onclick = () => alert("Post button works");
 
-/* AUTH */
-let user = null;
-
-async function login(){
-  alert("Login clicked");
-  if(!supabase) return alert("Supabase not ready");
-
-  await supabase.auth.signInWithOAuth({provider:"google"});
-}
-
-async function logout(){
-  if(!supabase) return;
-  await supabase.auth.signOut();
-}
-
-setTimeout(()=>{
-  if(!supabase) return;
-
-  supabase.auth.onAuthStateChange((_,session)=>{
-    user = session?.user || null;
-    document.getElementById("user").innerText =
-      user ? user.email : "Not logged in";
-  });
-},500);
-
-/* IDEAS */
-async function addIdea(){
-  alert("Post clicked");
-
-  if(!user) return alert("Login first");
-  if(!supabase) return;
-
-  const text = document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await supabase.from("ideas").insert({text, votes:0});
-  loadIdeas();
-}
-
-async function vote(id){
-  alert("Vote clicked");
-
-  if(!supabase) return;
-
-  const {data} = await supabase.from("ideas")
-    .select("votes")
-    .eq("id",id)
-    .single();
-
-  await supabase.from("ideas")
-    .update({votes:(data.votes||0)+1})
-    .eq("id",id);
-
-  loadIdeas();
-}
-
-async function loadIdeas(){
-  if(!supabase) return;
-
-  const {data} = await supabase.from("ideas").select("*");
-  if(!data) return;
-
-  document.getElementById("ideas").innerHTML =
-    data.map(i=>`
-      <div class="card">
-        ${i.text}
-        <div>${i.votes||0}</div>
-        <button onclick="vote('${i.id}')">Vote</button>
-      </div>
-    `).join("");
-}
-
-/* GAME (GUARANTEED WORKING) */
+/* GAME */
 let running=false;
 let score=0;
 
-function startGame(){
+startBtn.onclick = () => {
   alert("Game started");
-
   running=true;
   score=0;
   document.getElementById("score").innerText=0;
@@ -147,17 +62,14 @@ function startGame(){
   setTimeout(()=>{
     running=false;
     alert("Score: "+score);
-  },10000);
-}
+  },5000);
+};
 
-function hit(){
+star.onclick = () => {
   if(!running) return;
   score++;
   document.getElementById("score").innerText=score;
-}
-
-/* INIT */
-setTimeout(loadIdeas,1000);
+};
 
 </script>
 
