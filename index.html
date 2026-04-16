@@ -1,148 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election FIXED</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{margin:0;font-family:Arial;background:#05050a;color:white;}
-header{display:flex;justify-content:space-between;padding:12px;background:#111;}
-button{padding:10px;margin:5px;background:#a855f7;border:none;border-radius:8px;color:white;}
-input{padding:10px;width:100%;margin:5px 0;border-radius:8px;border:none;background:#1a1a1a;color:white;}
-.card{background:#111;padding:10px;margin:10px 0;border-radius:10px;border:1px solid #333;}
-.star{font-size:50px;cursor:pointer;text-align:center;}
-#error{color:red;text-align:center;padding:10px;}
-</style>
+<title>TEST</title>
 </head>
 
-<body>
+<body style="background:black;color:white;text-align:center;padding:50px;">
 
-<header>
-  <div>🗳️ MAVRIC LIVE</div>
-  <div>🔴 LIVE</div>
-</header>
+<h1>TEST PAGE</h1>
 
-<div id="error"></div>
-
-<button onclick="login()">Login</button>
-<button onclick="logout()">Logout</button>
-<div id="user">Not logged in</div>
-
-<input id="ideaInput" placeholder="Enter idea"/>
-<button onclick="addIdea()">Post Idea</button>
-
-<div id="ideas"></div>
-
-<h3>🎮 Game</h3>
-<button onclick="startGame()">Start</button>
-<div class="star" onclick="hit()">⭐</div>
-<div id="score">0</div>
+<button onclick="test()">CLICK ME</button>
 
 <script>
-
-/* SAFE LOAD */
-let supabase;
-
-if(window.supabase){
-  supabase = window.supabase.createClient(
-    "PASTE_SUPABASE_URL",
-    "PASTE_SUPABASE_ANON_KEY"
-  );
-}else{
-  document.getElementById("error").innerText =
-    "Supabase failed to load.";
+function test(){
+  alert("JS IS WORKING");
 }
-
-/* GLOBAL ERROR DISPLAY */
-window.onerror = function(msg){
-  document.getElementById("error").innerText = msg;
-};
-
-/* AUTH */
-let user=null;
-
-function login(){
-  if(!supabase) return alert("Supabase not ready");
-  supabase.auth.signInWithOAuth({provider:"google"});
-}
-
-function logout(){
-  supabase.auth.signOut();
-}
-
-supabase?.auth.onAuthStateChange((_,session)=>{
-  user=session?.user||null;
-  document.getElementById("user").innerText =
-    user ? user.email : "Not logged in";
-});
-
-/* IDEAS */
-async function addIdea(){
-  if(!user) return alert("Login first");
-
-  const text=document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await supabase.from("ideas").insert({text,votes:0});
-  loadIdeas();
-}
-
-async function vote(id){
-  const {data}=await supabase.from("ideas")
-    .select("votes")
-    .eq("id",id)
-    .single();
-
-  await supabase.from("ideas")
-    .update({votes:(data.votes||0)+1})
-    .eq("id",id);
-
-  loadIdeas();
-}
-
-async function loadIdeas(){
-  if(!supabase) return;
-
-  const {data}=await supabase.from("ideas").select("*");
-  if(!data) return;
-
-  document.getElementById("ideas").innerHTML =
-    data.map(i=>`
-      <div class="card">
-        ${i.text}
-        <div>${i.votes||0}</div>
-        <button onclick="vote('${i.id}')">Vote</button>
-      </div>
-    `).join("");
-}
-
-/* GAME (FIXED) */
-let running=false;
-let score=0;
-
-function startGame(){
-  running=true;
-  score=0;
-  document.getElementById("score").innerText=0;
-
-  setTimeout(()=>{
-    running=false;
-    alert("Score: "+score);
-  },10000);
-}
-
-function hit(){
-  if(!running) return;
-  score++;
-  document.getElementById("score").innerText=score;
-}
-
-/* INIT */
-setTimeout(loadIdeas,500);
-
 </script>
 
 </body>
