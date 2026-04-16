@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election Platform V6 Stable</title>
+<title>Mavric Election V7 SAFE</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -16,14 +16,9 @@ body{
   text-align:center;
 }
 
-header{
-  padding:12px;
-  background:#111;
-  font-weight:bold;
-}
-
 #status{
   padding:10px;
+  background:#111;
   color:#a855f7;
 }
 
@@ -44,8 +39,6 @@ input{
   border:none;
   background:#1a1a1a;
   color:white;
-  width:80%;
-  max-width:300px;
 }
 
 .card{
@@ -59,40 +52,44 @@ input{
 .star{
   font-size:50px;
   cursor:pointer;
-  user-select:none;
 }
 </style>
 </head>
 
 <body>
 
-<header>🗳️ MAVRIC LIVE PLATFORM</header>
+<div id="status">JS Running...</div>
 
-<div id="status">Starting...</div>
+<h1>🗳️ MAVRIC PLATFORM</h1>
 
-<!-- AUTH -->
 <button id="loginBtn">Login</button>
 <button id="logoutBtn">Logout</button>
+
 <div id="user">Not logged in</div>
 
-<!-- IDEAS -->
 <h3>💡 Ideas</h3>
-<input id="ideaInput" placeholder="Enter idea"/>
-<br/>
-<button id="postBtn">Post Idea</button>
+
+<input id="ideaInput" placeholder="Idea"/>
+<button id="postBtn">Post</button>
 
 <div id="ideas"></div>
 
-<!-- GAME -->
 <h3>🎮 Game</h3>
-<button id="startBtn">Start Game</button>
+
+<button id="startBtn">Start</button>
 <div class="star" id="star">⭐</div>
 <div id="score">0</div>
 
 <script>
 
 /* =========================
-   GLOBAL STATE
+   FORCE PROOF SCRIPT RUNNING
+========================= */
+console.log("SCRIPT ACTIVE");
+document.getElementById("status").innerText = "Script Active";
+
+/* =========================
+   SAFE STATE
 ========================= */
 let supabase = null;
 let user = null;
@@ -100,92 +97,89 @@ let running = false;
 let score = 0;
 
 /* =========================
-   INIT UI FIRST (ALWAYS WORKS)
+   UI (ALWAYS WORKS)
 ========================= */
-setupUI();
+document.getElementById("loginBtn").onclick = () => {
+  alert("Login clicked");
 
-/* =========================
-   SAFE BACKEND INIT
-========================= */
-setTimeout(initSupabase, 800);
-
-function initSupabase(){
-
-  if(!window.supabase){
-    document.getElementById("status").innerText =
-      "⚠️ Supabase failed to load (CDN issue)";
+  if(!supabase){
+    alert("Backend not ready (Supabase not loaded)");
     return;
   }
 
+  supabase.auth.signInWithOAuth({provider:"google"});
+};
+
+document.getElementById("logoutBtn").onclick = () => {
+  alert("Logout clicked");
+  if(supabase) supabase.auth.signOut();
+};
+
+document.getElementById("postBtn").onclick = async () => {
+  alert("Post clicked");
+
+  if(!supabase) return alert("Backend not ready");
+
+  const text = document.getElementById("ideaInput").value;
+  if(!text) return;
+
+  await supabase.from("ideas").insert({text, votes:0});
+  loadIdeas();
+};
+
+/* GAME ALWAYS WORKS */
+document.getElementById("startBtn").onclick = () => {
+  alert("Game started");
+
+  running = true;
+  score = 0;
+  document.getElementById("score").innerText = 0;
+
+  setTimeout(()=>{
+    running = false;
+    alert("Score: " + score);
+  }, 6000);
+};
+
+document.getElementById("star").onclick = () => {
+  if(!running) return;
+  score++;
+  document.getElementById("score").innerText = score;
+};
+
+/* =========================
+   SUPABASE (NON-BLOCKING)
+========================= */
+function initSupabase(){
   try{
+    if(!window.supabase){
+      document.getElementById("status").innerText =
+        "Supabase not loaded (UI still works)";
+      return;
+    }
+
     supabase = window.supabase.createClient(
       "PASTE_SUPABASE_URL",
       "PASTE_SUPABASE_ANON_KEY"
     );
 
     document.getElementById("status").innerText =
-      "✅ Connected to backend";
+      "Backend Connected";
 
-    setupAuth();
     loadIdeas();
 
-  } catch(e){
+  }catch(e){
     console.error(e);
     document.getElementById("status").innerText =
-      "❌ Supabase init error";
+      "Supabase error (UI still works)";
   }
 }
 
-/* =========================
-   UI ALWAYS WORKS (NO FAILS)
-========================= */
-function setupUI(){
-
-  document.getElementById("loginBtn").onclick = () => {
-    if(!supabase){
-      alert("Backend not ready yet");
-      return;
-    }
-    supabase.auth.signInWithOAuth({provider:"google"});
-  };
-
-  document.getElementById("logoutBtn").onclick = () => {
-    if(supabase) supabase.auth.signOut();
-  };
-
-  document.getElementById("postBtn").onclick = async () => {
-    if(!supabase) return alert("Backend not ready");
-    if(!user) return alert("Login first");
-
-    const text = document.getElementById("ideaInput").value;
-    if(!text) return;
-
-    await supabase.from("ideas").insert({
-      text,
-      votes:0
-    });
-
-    document.getElementById("ideaInput").value="";
-    loadIdeas();
-  };
-
-  document.getElementById("startBtn").onclick = startGame;
-  document.getElementById("star").onclick = hit;
-}
+/* run immediately, no delay tricks */
+initSupabase();
 
 /* =========================
-   AUTH
-========================= */
-function setupAuth(){
-  supabase.auth.onAuthStateChange((_,session)=>{
-    user = session?.user || null;
-    document.getElementById("user").innerText =
-      user ? user.email : "Not logged in";
-  });
-}
-
-/* =========================
-   IDEAS + VOTING
+   IDEAS
 ========================= */
 async function loadIdeas(){
   if(!supabase) return;
@@ -204,7 +198,6 @@ async function loadIdeas(){
 }
 
 async function vote(id){
-
   if(!supabase) return;
 
   const {data} = await supabase.from("ideas")
@@ -217,26 +210,6 @@ async function vote(id){
     .eq("id",id);
 
   loadIdeas();
-}
-
-/* =========================
-   GAME (ALWAYS WORKS)
-========================= */
-function startGame(){
-  running = true;
-  score = 0;
-  document.getElementById("score").innerText = 0;
-
-  setTimeout(()=>{
-    running = false;
-    alert("Score: " + score);
-  }, 8000);
-}
-
-function hit(){
-  if(!running) return;
-  score++;
-  document.getElementById("score").innerText = score;
 }
 
 </script>
