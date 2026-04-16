@@ -3,172 +3,89 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Campaign - Election Night</title>
+
+<title>Mavric Campaign</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 
 /* =========================
-   BASE
+   BASE + BACKGROUND
 ========================= */
 body{
   margin:0;
   font-family:Arial;
   background:#0b0b0f;
   color:white;
-  overflow-x:hidden;
 }
 
-/* =========================
-   CINEMATIC BACKGROUND
-========================= */
 .bg{
   position:fixed;
   inset:0;
   z-index:-3;
   background:linear-gradient(120deg,#0b0b0f,#1a0b2e,#2a0b3d,#0b0b0f);
   background-size:300% 300%;
-  animation:move 12s ease infinite;
+  animation:move 12s infinite;
 }
 
 @keyframes move{
-  0%{background-position:0% 50%}
-  50%{background-position:100% 50%}
-  100%{background-position:0% 50%}
-}
-
-.glow{
-  position:fixed;
-  inset:0;
-  z-index:-2;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(168,85,247,0.25), transparent 40%),
-    radial-gradient(circle at 70% 80%, rgba(255,215,0,0.07), transparent 40%);
-}
-
-canvas{
-  position:fixed;
-  inset:0;
-  z-index:-1;
-  pointer-events:none;
+  0%{background-position:0%}
+  50%{background-position:100%}
+  100%{background-position:0%}
 }
 
 /* =========================
-   HEADER
-========================= */
-header{
-  padding:14px;
-  text-align:center;
-  background:#111;
-  color:#a855f7;
-  font-weight:bold;
-  position:sticky;
-  top:0;
-}
-
-/* =========================
-   HERO
-========================= */
-.hero{
-  text-align:center;
-  padding:25px;
-}
-
-.slogan{
-  color:#a855f7;
-  font-weight:bold;
-}
-
-/* =========================
-   SECTIONS
+   UI
 ========================= */
 .section{
   padding:20px;
   text-align:center;
 }
 
-/* =========================
-   INPUTS
-========================= */
 input, button{
-  width:90%;
-  max-width:360px;
   padding:10px;
-  margin:6px;
+  margin:5px;
   border-radius:8px;
   border:none;
-}
-
-input{
-  background:#1a1a1a;
-  color:white;
-  border:1px solid #333;
 }
 
 button{
   background:#a855f7;
   color:white;
-  cursor:pointer;
 }
 
 /* =========================
-   ELECTION BOARD
+   LEADERBOARD BOARD
 ========================= */
-.board{
-  max-width:650px;
-  margin:auto;
-}
-
 .card{
   background:#111;
   border:1px solid #333;
-  padding:12px;
-  margin:10px 0;
+  padding:10px;
+  margin:10px auto;
+  max-width:600px;
   border-radius:10px;
   text-align:left;
-  transition:0.3s;
-}
-
-.leader{
-  border:1px solid gold;
-  box-shadow:0 0 15px rgba(255,215,0,0.3);
 }
 
 .bar{
   height:10px;
   background:#222;
   border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
 }
 
 .fill{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
-  width:0%;
-  transition:0.8s ease;
-}
-
-.rank{
-  font-weight:bold;
-  color:gold;
 }
 
 /* =========================
-   FEED
+   GAME
 ========================= */
-.feed{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-  gap:10px;
-}
-
-.feed img{
-  width:100%;
-  height:140px;
-  object-fit:cover;
-  border-radius:8px;
+canvas{
+  background:#111;
+  border:2px solid #a855f7;
+  border-radius:10px;
 }
 
 </style>
@@ -177,40 +94,37 @@ button{
 <body>
 
 <div class="bg"></div>
-<div class="glow"></div>
-<canvas id="c"></canvas>
 
-<header>🗳️ ELECTION NIGHT - MAVRIC CAMPAIGN</header>
-
-<!-- HERO -->
-<div class="hero">
-  <h1>LIVE RESULTS</h1>
-  <div class="slogan">Your Voice, My Actions.</div>
+<!-- LOGIN -->
+<div class="section">
+  <button onclick="login()">Sign in with Google</button>
+  <button onclick="logout()">Logout</button>
+  <div id="user"></div>
 </div>
 
-<!-- TIMER -->
+<!-- HERO -->
 <div class="section">
-  <h2>Countdown</h2>
-  <div id="timer"></div>
+  <h1>Mavric Campaign</h1>
+  <p>Your Voice, My Actions.</p>
 </div>
 
 <!-- IDEAS -->
 <div class="section">
-  <h2>Live Election Board</h2>
-  <input id="ideaInput" placeholder="Add idea"/>
-  <button onclick="addIdea()">Post</button>
-
-  <div id="ideas" class="board"></div>
+  <h2>Ideas</h2>
+  <input id="ideaInput" placeholder="Your idea"/>
+  <button onclick="addIdea()">Post Idea</button>
+  <div id="ideas"></div>
 </div>
 
-<!-- UPLOAD -->
+<!-- GAME -->
 <div class="section">
-  <h2>Supporter Photos</h2>
-  <input type="file" id="files" multiple>
-  <input id="caption" placeholder="Caption">
-  <button onclick="upload()">Upload (max 25)</button>
+  <h2>🎮 Vote Game</h2>
+  <button onclick="startGame()">Start</button>
+  <h3 id="score">Score: 0</h3>
+  <canvas id="gameCanvas" width="320" height="400"></canvas>
 
-  <div class="feed" id="feed"></div>
+  <h3>🏆 Leaderboard</h3>
+  <div id="leaderboard"></div>
 </div>
 
 <script>
@@ -223,199 +137,190 @@ const client = supabase.createClient(
   "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
 );
 
-/* =========================
-   SETTINGS
-========================= */
-const UPLOAD_PASSWORD = "mavric123";
+let currentUser = null;
 
 /* =========================
-   TIMER
+   AUTH
 ========================= */
-const end = new Date("2026-04-24");
-
-function timer(){
-  const diff = end - new Date();
-  const el = document.getElementById("timer");
-
-  const d = Math.floor(diff/86400000);
-  el.innerHTML = diff > 0 ? `${d} days left` : "VOTING DAY";
+async function login(){
+  await client.auth.signInWithOAuth({ provider: 'google' });
 }
+
+async function logout(){
+  await client.auth.signOut();
+  location.reload();
+}
+
+async function getUser(){
+  const { data } = await client.auth.getUser();
+  currentUser = data.user;
+
+  document.getElementById("user").innerText =
+    currentUser ? "Signed in as: "+currentUser.email : "Not signed in";
+}
+
+getUser();
 
 /* =========================
-   VOTING (1 PER PERSON PER IDEA)
+   IDEAS
 ========================= */
-function voted(id){
-  return localStorage.getItem("v_"+id)==="1";
-}
-
-function mark(id){
-  localStorage.setItem("v_"+id,"1");
-}
-
-async function vote(id,votes){
-
-  if(voted(id)){
-    alert("Already voted");
+async function addIdea(){
+  if(!currentUser){
+    alert("Login first");
     return;
   }
 
-  await client.from("ideas")
-    .update({votes:votes+1})
-    .eq("id",id);
+  const text = document.getElementById("ideaInput").value;
 
-  mark(id);
+  await client.from("ideas").insert({
+    text,
+    user: currentUser.email,
+    votes:0
+  });
+
   loadIdeas();
 }
 
-/* =========================
-   LIVE ELECTION BOARD
-========================= */
 async function loadIdeas(){
 
   const {data} = await client.from("ideas").select("*");
-  if(!data) return;
 
-  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
+  const total = data.reduce((a,b)=>a+(b.votes||0),0)||1;
 
   document.getElementById("ideas").innerHTML =
-    sorted.map((i,index)=>{
+    data.map(i=>{
 
       const percent = ((i.votes||0)/total*100).toFixed(1);
 
       return `
-        <div class="card ${index===0?"leader":""}">
-          
-          <div>
-            <span class="rank">#${index+1}</span>
-            💡 ${i.text}
-          </div>
-
-          <div>🗳️ ${i.votes||0} (${percent}%)</div>
-
+        <div class="card">
+          💡 ${i.text}<br>
+          👤 ${i.user}<br>
+          🗳️ ${i.votes}
           <div class="bar">
             <div class="fill" style="width:${percent}%"></div>
           </div>
-
-          <button onclick="vote('${i.id}',${i.votes||0})">
-            Vote
-          </button>
-
+          <button onclick="vote('${i.id}',${i.votes})">Vote</button>
         </div>
       `;
     }).join("");
 }
 
 /* =========================
-   ADD IDEA
+   VOTING (REAL)
 ========================= */
-async function addIdea(){
-  const text=document.getElementById("ideaInput").value;
-  if(!text) return;
+async function vote(id,votes){
 
-  await client.from("ideas").insert({text,votes:0});
-  document.getElementById("ideaInput").value="";
+  if(!currentUser){
+    alert("Login to vote");
+    return;
+  }
+
+  const {data:existing} = await client
+    .from("votes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .eq("idea_id", id);
+
+  if(existing.length){
+    alert("Already voted");
+    return;
+  }
+
+  await client.from("votes").insert({
+    user_id: currentUser.id,
+    idea_id: id
+  });
+
+  await client.from("ideas")
+    .update({votes:votes+1})
+    .eq("id",id);
+
   loadIdeas();
 }
 
 /* =========================
-   UPLOAD (PASSWORD + 25)
+   GAME (uses user name)
 ========================= */
-async function upload(){
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-  const pw = prompt("Upload password:");
-  if(pw !== UPLOAD_PASSWORD){
-    alert("Wrong password");
+let items=[], score=0, running=false;
+
+function startGame(){
+  items=[];
+  score=0;
+  running=true;
+  loop();
+  spawn();
+}
+
+function spawn(){
+  if(!running) return;
+  items.push({x:Math.random()*300,y:0});
+  setTimeout(spawn,700);
+}
+
+canvas.onclick=e=>{
+  if(!running) return;
+  score++;
+  document.getElementById("score").innerText="Score:"+score;
+};
+
+function loop(){
+  if(!running) return;
+
+  ctx.clearRect(0,0,320,400);
+
+  items.forEach(i=>{
+    i.y+=2;
+    ctx.fillText("🗳️",i.x,i.y);
+
+    if(i.y>400){
+      running=false;
+      endGame();
+    }
+  });
+
+  requestAnimationFrame(loop);
+}
+
+async function endGame(){
+
+  if(!currentUser){
+    alert("Login to save score");
     return;
   }
 
-  const files = document.getElementById("files").files;
-  const caption = document.getElementById("caption").value;
+  await client.from("scores").insert({
+    name: currentUser.email,
+    score
+  });
 
-  const limit = Math.min(files.length,25);
-
-  for(let i=0;i<limit;i++){
-
-    const file = files[i];
-    const name = Date.now()+"-"+file.name;
-
-    await client.storage.from("campaign").upload(name,file);
-
-    const url = client.storage.from("campaign")
-      .getPublicUrl(name).data.publicUrl;
-
-    await client.from("photos").insert({
-      url,
-      caption
-    });
-  }
-
-  loadPhotos();
+  loadLeaderboard();
 }
 
 /* =========================
-   PHOTOS
+   LEADERBOARD
 ========================= */
-async function loadPhotos(){
-  const {data} = await client.from("photos").select("*");
-  if(!data) return;
+async function loadLeaderboard(){
+  const {data} = await client
+    .from("scores")
+    .select("*")
+    .order("score",{ascending:false})
+    .limit(5);
 
-  document.getElementById("feed").innerHTML =
-    data.map(p=>`
-      <img src="${p.url}">
+  document.getElementById("leaderboard").innerHTML =
+    data.map((p,i)=>`
+      <div>#${i+1} ${p.name} — ${p.score}</div>
     `).join("");
 }
-
-/* =========================
-   PARTICLES
-========================= */
-const c=document.getElementById("c");
-const x=c.getContext("2d");
-
-c.width=innerWidth;
-c.height=innerHeight;
-
-let p=[];
-
-for(let i=0;i<50;i++){
-  p.push({
-    x:Math.random()*c.width,
-    y:Math.random()*c.height,
-    r:Math.random()*2,
-    dx:(Math.random()-0.5)*0.3,
-    dy:(Math.random()-0.5)*0.3
-  });
-}
-
-function animate(){
-  x.clearRect(0,0,c.width,c.height);
-
-  for(let i of p){
-    x.beginPath();
-    x.arc(i.x,i.y,i.r,0,Math.PI*2);
-    x.fillStyle="rgba(168,85,247,0.4)";
-    x.fill();
-
-    i.x+=i.dx;
-    i.y+=i.dy;
-
-    if(i.x<0||i.x>c.width) i.dx*=-1;
-    if(i.y<0||i.y>c.height) i.dy*=-1;
-  }
-
-  requestAnimationFrame(animate);
-}
-
-animate();
 
 /* =========================
    INIT
 ========================= */
 loadIdeas();
-loadPhotos();
-timer();
-
-setInterval(timer,1000);
+loadLeaderboard();
 
 </script>
 
