@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election V5 Stable</title>
+<title>Mavric Election Platform V6 Stable</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -14,6 +14,17 @@ body{
   background:#0b0b12;
   color:white;
   text-align:center;
+}
+
+header{
+  padding:12px;
+  background:#111;
+  font-weight:bold;
+}
+
+#status{
+  padding:10px;
+  color:#a855f7;
 }
 
 button{
@@ -33,70 +44,87 @@ input{
   border:none;
   background:#1a1a1a;
   color:white;
+  width:80%;
+  max-width:300px;
 }
 
 .card{
   background:#111;
-  margin:10px;
+  margin:10px auto;
   padding:10px;
   border-radius:10px;
+  max-width:500px;
+}
+
+.star{
+  font-size:50px;
+  cursor:pointer;
+  user-select:none;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🗳️ MAVRIC ELECTION V5</h1>
+<header>🗳️ MAVRIC LIVE PLATFORM</header>
 
-<div id="status">UI Ready</div>
+<div id="status">Starting...</div>
 
+<!-- AUTH -->
 <button id="loginBtn">Login</button>
 <button id="logoutBtn">Logout</button>
-
 <div id="user">Not logged in</div>
 
+<!-- IDEAS -->
+<h3>💡 Ideas</h3>
 <input id="ideaInput" placeholder="Enter idea"/>
+<br/>
 <button id="postBtn">Post Idea</button>
 
 <div id="ideas"></div>
 
-<h2>🎮 Game</h2>
-<button id="startBtn">Start</button>
-<button id="hitBtn">⭐ Click</button>
+<!-- GAME -->
+<h3>🎮 Game</h3>
+<button id="startBtn">Start Game</button>
+<div class="star" id="star">⭐</div>
 <div id="score">0</div>
 
 <script>
 
 /* =========================
-   SAFE STATE (NO CRASH INIT)
+   GLOBAL STATE
 ========================= */
-
 let supabase = null;
 let user = null;
+let running = false;
+let score = 0;
 
-/* UI FIRST — ALWAYS SAFE */
+/* =========================
+   INIT UI FIRST (ALWAYS WORKS)
+========================= */
 setupUI();
 
 /* =========================
-   TRY SUPABASE AFTER UI LOADS
+   SAFE BACKEND INIT
 ========================= */
-setTimeout(initSupabase, 500);
+setTimeout(initSupabase, 800);
 
 function initSupabase(){
-  try {
-    if(!window.supabase){
-      document.getElementById("status").innerText =
-        "Supabase failed to load (CDN issue)";
-      return;
-    }
 
+  if(!window.supabase){
+    document.getElementById("status").innerText =
+      "⚠️ Supabase failed to load (CDN issue)";
+    return;
+  }
+
+  try{
     supabase = window.supabase.createClient(
       "PASTE_SUPABASE_URL",
       "PASTE_SUPABASE_ANON_KEY"
     );
 
     document.getElementById("status").innerText =
-      "Connected to backend";
+      "✅ Connected to backend";
 
     setupAuth();
     loadIdeas();
@@ -104,23 +132,25 @@ function initSupabase(){
   } catch(e){
     console.error(e);
     document.getElementById("status").innerText =
-      "Supabase error (safe mode active)";
+      "❌ Supabase init error";
   }
 }
 
 /* =========================
-   UI ALWAYS WORKS
+   UI ALWAYS WORKS (NO FAILS)
 ========================= */
 function setupUI(){
 
-  document.getElementById("loginBtn").onclick = async () => {
-    if(!supabase) return alert("Backend not ready");
-    await supabase.auth.signInWithOAuth({provider:"google"});
+  document.getElementById("loginBtn").onclick = () => {
+    if(!supabase){
+      alert("Backend not ready yet");
+      return;
+    }
+    supabase.auth.signInWithOAuth({provider:"google"});
   };
 
-  document.getElementById("logoutBtn").onclick = async () => {
-    if(!supabase) return;
-    await supabase.auth.signOut();
+  document.getElementById("logoutBtn").onclick = () => {
+    if(supabase) supabase.auth.signOut();
   };
 
   document.getElementById("postBtn").onclick = async () => {
@@ -130,13 +160,17 @@ function setupUI(){
     const text = document.getElementById("ideaInput").value;
     if(!text) return;
 
-    await supabase.from("ideas").insert({text, votes:0});
+    await supabase.from("ideas").insert({
+      text,
+      votes:0
+    });
+
     document.getElementById("ideaInput").value="";
     loadIdeas();
   };
 
   document.getElementById("startBtn").onclick = startGame;
-  document.getElementById("hitBtn").onclick = hit;
+  document.getElementById("star").onclick = hit;
 }
 
 /* =========================
@@ -151,7 +185,7 @@ function setupAuth(){
 }
 
 /* =========================
-   IDEAS
+   IDEAS + VOTING
 ========================= */
 async function loadIdeas(){
   if(!supabase) return;
@@ -170,6 +204,7 @@ async function loadIdeas(){
 }
 
 async function vote(id){
+
   if(!supabase) return;
 
   const {data} = await supabase.from("ideas")
@@ -185,26 +220,23 @@ async function vote(id){
 }
 
 /* =========================
-   GAME (FULLY SAFE)
+   GAME (ALWAYS WORKS)
 ========================= */
-let running=false;
-let score=0;
-
 function startGame(){
-  running=true;
-  score=0;
-  document.getElementById("score").innerText=0;
+  running = true;
+  score = 0;
+  document.getElementById("score").innerText = 0;
 
   setTimeout(()=>{
-    running=false;
-    alert("Score: "+score);
-  },8000);
+    running = false;
+    alert("Score: " + score);
+  }, 8000);
 }
 
 function hit(){
   if(!running) return;
   score++;
-  document.getElementById("score").innerText=score;
+  document.getElementById("score").innerText = score;
 }
 
 </script>
