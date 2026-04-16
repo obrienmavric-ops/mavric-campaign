@@ -2,197 +2,37 @@
 <html>
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election Platform</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-  background:#0b0b12;
-  color:white;
-  font-family:Arial;
-  text-align:center;
-}
-
-button{
-  padding:10px;
-  margin:8px;
-  background:#a855f7;
-  color:white;
-  border:none;
-  border-radius:8px;
-}
-
-input{
-  padding:10px;
-  margin:8px;
-  border-radius:8px;
-  border:none;
-  background:#1a1a1a;
-  color:white;
-}
-
-.card{
-  background:#111;
-  padding:10px;
-  margin:10px;
-  border-radius:10px;
-}
-
-.star{
-  font-size:50px;
-  cursor:pointer;
-}
-</style>
+<title>DEBUG TEST</title>
 </head>
 
-<body>
+<body style="background:black;color:white;text-align:center;padding:40px;">
 
-<h1>🗳️ MAVRIC LIVE PLATFORM</h1>
+<h1>DEBUG MODE</h1>
 
-<div id="status">Loading...</div>
+<div id="step1">Step 1: Page Loaded ❌</div>
+<div id="step2">Step 2: JS Running ❌</div>
+<div id="step3">Step 3: Buttons Active ❌</div>
 
-<button id="loginBtn">Login</button>
-<button id="logoutBtn">Logout</button>
-
-<div id="user">Not logged in</div>
-
-<input id="ideaInput" placeholder="Your idea"/>
-<button id="postBtn">Post Idea</button>
-
-<div id="ideas"></div>
-
-<h2>🎮 Game</h2>
-<button id="startBtn">Start</button>
-<div class="star" id="star">⭐</div>
-<div id="score">0</div>
+<button id="testBtn">CLICK TEST</button>
 
 <script>
 
-/* =========================
-   SAFE SUPABASE LOADER
-========================= */
-let supabase = null;
-let user = null;
+document.getElementById("step1").innerText = "Step 1: Page Loaded ✅";
+console.log("STEP 1 OK");
 
-function waitForSupabase(){
-  if(window.supabase){
-
-    supabase = window.supabase.createClient(
-      "PASTE_SUPABASE_URL",
-      "PASTE_SUPABASE_ANON_KEY"
-    );
-
-    document.getElementById("status").innerText = "Connected";
-
-    setupAuth();
-    setupButtons();
-    loadIdeas();
-
-  } else {
-    setTimeout(waitForSupabase, 200);
-  }
+try {
+  document.getElementById("step2").innerText = "Step 2: JS Running ✅";
+  console.log("STEP 2 OK");
+} catch(e){
+  console.log("STEP 2 FAIL", e);
 }
 
-/* =========================
-   AUTH
-========================= */
-function setupAuth(){
-  supabase.auth.onAuthStateChange((_,session)=>{
-    user = session?.user || null;
-    document.getElementById("user").innerText =
-      user ? user.email : "Not logged in";
-  });
-}
+document.getElementById("testBtn").onclick = () => {
+  alert("BUTTON WORKS");
+  document.getElementById("step3").innerText = "Step 3: Buttons Active ✅";
+};
 
-/* =========================
-   BUTTONS
-========================= */
-function setupButtons(){
-
-  document.getElementById("loginBtn").onclick = () => {
-    supabase.auth.signInWithOAuth({provider:"google"});
-  };
-
-  document.getElementById("logoutBtn").onclick = () => {
-    supabase.auth.signOut();
-  };
-
-  document.getElementById("postBtn").onclick = async () => {
-    if(!user) return alert("Login first");
-
-    const text = document.getElementById("ideaInput").value;
-    if(!text) return;
-
-    await supabase.from("ideas").insert({
-      text,
-      votes:0
-    });
-
-    document.getElementById("ideaInput").value="";
-    loadIdeas();
-  };
-
-  document.getElementById("startBtn").onclick = startGame;
-  document.getElementById("star").onclick = hit;
-}
-
-/* =========================
-   IDEAS
-========================= */
-async function vote(id){
-  const {data} = await supabase.from("ideas")
-    .select("votes")
-    .eq("id",id)
-    .single();
-
-  await supabase.from("ideas")
-    .update({votes:(data.votes||0)+1})
-    .eq("id",id);
-
-  loadIdeas();
-}
-
-async function loadIdeas(){
-  const {data} = await supabase.from("ideas").select("*");
-  if(!data) return;
-
-  document.getElementById("ideas").innerHTML =
-    data.map(i=>`
-      <div class="card">
-        ${i.text}
-        <div>🗳️ ${i.votes||0}</div>
-        <button onclick="vote('${i.id}')">Vote</button>
-      </div>
-    `).join("");
-}
-
-/* =========================
-   GAME (FIXED)
-========================= */
-let running=false;
-let score=0;
-
-function startGame(){
-  running=true;
-  score=0;
-  document.getElementById("score").innerText=0;
-
-  setTimeout(()=>{
-    running=false;
-    alert("Score: "+score);
-  },10000);
-}
-
-function hit(){
-  if(!running) return;
-  score++;
-  document.getElementById("score").innerText=score;
-}
-
-/* START */
-waitForSupabase();
+console.log("SCRIPT FINISHED");
 
 </script>
 
