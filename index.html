@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Night Platform</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Mavric Election Platform</title>
 
 <style>
 
@@ -30,10 +28,9 @@ header{
   font-weight:bold;
   animation:blink 1s infinite;
 }
-
 @keyframes blink{50%{opacity:0.3}}
 
-/* CENTER INPUT AREA */
+/* CENTER */
 .center{
   text-align:center;
   padding:10px;
@@ -60,7 +57,7 @@ button{
   cursor:pointer;
 }
 
-/* IDEAS */
+/* CARDS */
 .card{
   background:#111;
   border:1px solid #333;
@@ -123,9 +120,9 @@ button{
   <div class="live">🔴 LIVE</div>
 </header>
 
-<!-- LOGIN -->
+<!-- FAKE LOGIN -->
 <div class="center">
-  <button onclick="login()">Login with Google</button>
+  <button onclick="login()">Login</button>
   <button onclick="logout()">Logout</button>
   <div id="user"></div>
 </div>
@@ -160,162 +157,155 @@ button{
 <script>
 
 /* =====================
-   SUPABASE
+   FAKE LOGIN SYSTEM
 ===================== */
-const client = supabase.createClient(
-  "https://didfhlfvdvurkfwbipli.supabase.co",
-  "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-);
+let user = localStorage.getItem("user");
 
-/* =====================
-   AUTH (FIXED)
-===================== */
-let user = null;
+function login(){
+  const name = prompt("Enter your name:");
+  if(!name) return;
 
-client.auth.getSession().then(({ data }) => {
-  user = data.session?.user || null;
+  user = name;
+  localStorage.setItem("user", user);
   updateUser();
-});
+}
 
-client.auth.onAuthStateChange((_, session) => {
-  user = session?.user || null;
+function logout(){
+  user = null;
+  localStorage.removeItem("user");
   updateUser();
-});
+}
 
 function updateUser(){
   document.getElementById("user").innerText =
-    user ? `Logged in: ${user.email}` : "Not logged in";
+    user ? "Logged in as: " + user : "Not logged in";
 }
 
-async function login(){
-  await client.auth.signInWithOAuth({ provider: "google" });
-}
-
-async function logout(){
-  await client.auth.signOut();
-}
+updateUser();
 
 /* =====================
-   IDEAS
+   IDEAS (LOCAL STORAGE)
 ===================== */
 
-async function addIdea(){
+let ideas = JSON.parse(localStorage.getItem("ideas") || "[]");
+
+function saveIdeas(){
+  localStorage.setItem("ideas", JSON.stringify(ideas));
+}
+
+function addIdea(){
   if(!user){
-    alert("You must log in");
+    alert("Login required");
     return;
   }
 
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  await client.from("ideas").insert({
+  ideas.push({
+    id: Date.now().toString(),
     text,
     votes:0,
     voters:[]
   });
 
+  saveIdeas();
   document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* 🔐 LOGIN-LOCKED VOTING (FIXED) */
-async function vote(id, votes, voters = []){
-
-  if(!user){
-    alert("Login required to vote");
-    return;
-  }
-
-  const uid = user.id;
-
-  const safeVoters = Array.isArray(voters) ? voters : [];
-
-  if(safeVoters.includes(uid)){
-    alert("You already voted");
-    return;
-  }
-
-  const updated = [...safeVoters, uid];
-
-  const { error } = await client.from("ideas")
-    .update({
-      votes: votes + 1,
-      voters: updated
-    })
-    .eq("id", id);
-
-  if(error){
-    console.log(error);
-    alert("Vote failed (check Supabase RLS)");
-    return;
-  }
-
-  loadIdeas();
-}
-
-async function loadIdeas(){
-  const {data} = await client.from("ideas").select("*");
-  if(!data) return;
-
-  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = Math.max(sorted.reduce((a,b)=>a+(b.votes||0),0),1);
-
-  document.getElementById("ideas").innerHTML =
-    sorted.map((i,index)=>{
-      const percent = ((i.votes||0)/total*100).toFixed(1);
-
-      return `
-        <div class="card ${index===0?"leader":""}">
-          <b>#${index+1}</b> 💡 ${i.text}
-          <div>🗳️ ${i.votes||0} (${percent}%)</div>
-
-          <div class="bar">
-            <div class="fill" style="width:${percent}%"></div>
-          </div>
-
-          <button onclick='vote("${i.id}",${i.votes||0},${JSON.stringify(i.voters||[])})'>
-            Vote
-          </button>
-        </div>
-      `;
-    }).join("");
-}
-
-/* =====================
-   PHOTOS
-===================== */
-
-async function upload(){
+/* VOTING (LOCKED PER USER NAME) */
+function vote(id){
   if(!user){
     alert("Login required");
     return;
   }
 
-  const files=document.getElementById("files").files;
-  const caption=document.getElementById("caption").value;
+  const idea = ideas.find(i=>i.id===id);
+  if(!idea) return;
 
-  for(let i=0;i<Math.min(files.length,25);i++){
-    const file=files[i];
-    const name=Date.now()+"-"+file.name;
-
-    await client.storage.from("campaign").upload(name,file);
-
-    const url=client.storage.from("campaign")
-      .getPublicUrl(name).data.publicUrl;
-
-    await client.from("photos").insert({url,caption});
+  if(idea.voters.includes(user)){
+    alert("You already voted");
+    return;
   }
 
-  loadPhotos();
+  idea.votes++;
+  idea.voters.push(user);
+
+  saveIdeas();
+  loadIdeas();
 }
 
-async function loadPhotos(){
-  const {data}=await client.from("photos").select("*");
-  if(!data)return;
+/* RENDER IDEAS */
+function loadIdeas(){
 
-  document.getElementById("feed").innerHTML=
-    data.map(p=>`<img class="photo" src="${p.url}"/>`).join("");
+  const sorted = [...ideas].sort((a,b)=>b.votes-a.votes);
+  const total = Math.max(sorted.reduce((a,b)=>a+b.votes,0),1);
+
+  document.getElementById("ideas").innerHTML =
+    sorted.map((i,index)=>{
+
+      const percent = ((i.votes/total)*100).toFixed(1);
+
+      return `
+        <div class="card ${index===0?"leader":""}">
+          <b>#${index+1}</b> 💡 ${i.text}
+          <div>🗳️ ${i.votes} (${percent}%)</div>
+
+          <div class="bar">
+            <div class="fill" style="width:${percent}%"></div>
+          </div>
+
+          <button onclick="vote('${i.id}')">Vote</button>
+        </div>
+      `;
+    }).join("");
 }
+
+loadIdeas();
+
+/* =====================
+   PHOTOS (LOCAL ONLY)
+===================== */
+
+let photos = JSON.parse(localStorage.getItem("photos") || "[]");
+
+function upload(){
+
+  if(!user){
+    alert("Login required");
+    return;
+  }
+
+  const files = document.getElementById("files").files;
+  const caption = document.getElementById("caption").value;
+
+  for(let file of files){
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+      photos.push({
+        url:e.target.result,
+        caption
+      });
+
+      localStorage.setItem("photos", JSON.stringify(photos));
+      loadPhotos();
+    };
+
+    reader.readAsDataURL(file);
+  }
+}
+
+function loadPhotos(){
+  document.getElementById("feed").innerHTML =
+    photos.map(p=>`
+      <img class="photo" src="${p.url}"/>
+    `).join("");
+}
+
+loadPhotos();
 
 /* =====================
    GAME
@@ -345,14 +335,6 @@ function hit(){
   score++;
   document.getElementById("score").innerText=score;
 }
-
-/* =====================
-   INIT
-===================== */
-loadIdeas();
-loadPhotos();
-
-setInterval(loadIdeas,3000);
 
 </script>
 
