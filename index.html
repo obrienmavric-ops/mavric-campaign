@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CNN Election V10 DEBUG</title>
+<title>CNN Election V12 Stable</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,6 +15,7 @@ body{
   color:white;
 }
 
+/* HEADER */
 header{
   padding:10px;
   background:#111;
@@ -23,8 +24,7 @@ header{
   justify-content:space-between;
 }
 
-#live{color:red;font-weight:bold;}
-
+/* LAYOUT */
 .container{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -42,6 +42,7 @@ header{
   padding:10px;
 }
 
+/* INPUTS */
 input{
   width:70%;
   padding:10px;
@@ -61,6 +62,7 @@ button{
   cursor:pointer;
 }
 
+/* IDEAS */
 .card{
   background:#111;
   padding:10px;
@@ -69,21 +71,29 @@ button{
   border:1px solid #222;
 }
 
-img{
+/* IMAGE FIX (NO STRETCH) */
+.imgBox{
   width:100%;
   height:140px;
-  object-fit:cover;
+  overflow:hidden;
   border-radius:8px;
+  margin-top:10px;
 }
 
-.debug{
+.imgBox img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* DEBUG */
+#debug{
+  font-size:12px;
   background:#000;
   color:#00ff99;
   padding:10px;
-  font-size:12px;
-  height:120px;
+  height:100px;
   overflow:auto;
-  border-top:1px solid #333;
 }
 </style>
 </head>
@@ -91,9 +101,15 @@ img{
 <body>
 
 <header>
-  <div>📺 CNN ELECTION DEBUG V10</div>
-  <div id="live">● LIVE</div>
+  <div>📺 CNN ELECTION V12</div>
+  <div id="status">STARTING...</div>
 </header>
+
+<div style="padding:10px;background:#0b0c18;">
+  <button onclick="login()">🔐 Login</button>
+  <button onclick="logout()">Logout</button>
+  <div id="user">Not logged in</div>
+</div>
 
 <div class="container">
 
@@ -107,38 +123,33 @@ img{
 
     <div id="ideas"></div>
 
-    <hr/>
-
-    <h3>📸 Upload Image</h3>
-    <input type="file" id="file"/>
-    <button onclick="uploadImage()">Upload</button>
-
   </div>
 
   <!-- RIGHT -->
   <div class="screen">
 
-    <h3>📊 Live Ideas</h3>
-    <div id="top"></div>
+    <h3>📊 Leader</h3>
+    <div id="leader"></div>
 
     <h3>🖼️ Images</h3>
+    <input type="file" id="file"/>
+    <button onclick="uploadImage()">Upload</button>
+
     <div id="images"></div>
 
   </div>
 
 </div>
 
-<!-- DEBUG CONSOLE -->
-<div class="debug" id="debug"></div>
+<!-- DEBUG -->
+<div id="debug"></div>
 
 <script>
 
 let client;
 let user = null;
 
-/* OWNER LOCK (optional later) */
-const OWNER_ID = "18d43a56-6376-458e-9301-add699803f40";
-
+/* DEBUG LOG */
 function log(msg){
   console.log(msg);
   document.getElementById("debug").innerHTML += msg + "<br>";
@@ -153,13 +164,34 @@ window.onload = async () => {
   );
 
   const { data } = await client.auth.getUser();
-  user = data?.user;
+  user = data?.user || null;
 
-  log("User loaded: " + (user?.email || "none"));
+  updateUser();
 
   loadIdeas();
   loadImages();
+
+  document.getElementById("status").innerText = "LIVE";
 };
+
+/* AUTH */
+async function login(){
+  await client.auth.signInWithOAuth({
+    provider:"google",
+    options:{ redirectTo: window.location.origin }
+  });
+}
+
+async function logout(){
+  await client.auth.signOut();
+  user = null;
+  updateUser();
+}
+
+function updateUser(){
+  document.getElementById("user").innerText =
+    user ? `Logged in: ${user.email}` : "Not logged in";
+}
 
 /* POST IDEA */
 async function postIdea(){
@@ -170,47 +202,60 @@ async function postIdea(){
   }
 
   const text = document.getElementById("ideaInput").value;
-
-  log("POST IDEA CLICKED: " + text);
+  if(!text) return;
 
   const { error } = await client.from("ideas").insert({
     text,
     votes:0
   });
 
-  if(error){
-    log("IDEA ERROR: " + error.message);
-    return;
-  }
+  if(error) return log(error.message);
 
   loadIdeas();
 }
 
-/* VOTE */
+/* VOTE (NO DUPLICATES) */
 async function vote(id){
 
-  log("VOTE CLICKED: " + id);
+  if(!user){
+    alert("Login required");
+    return;
+  }
 
-  const { data, error } = await client
+  // CHECK IF ALREADY VOTED
+  const { data: existing } = await client
+    .from("votes")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("idea_id", id)
+    .maybeSingle();
+
+  if(existing){
+    alert("Already voted");
+    return;
+  }
+
+  // INSERT VOTE RECORD
+  const { error: vErr } = await client
+    .from("votes")
+    .insert({
+      user_id: user.id,
+      idea_id: id
+    });
+
+  if(vErr) return log(vErr.message);
+
+  // INCREMENT COUNT
+  const { data } = await client
     .from("ideas")
     .select("votes")
     .eq("id", id)
     .single();
 
-  if(error){
-    log("VOTE SELECT ERROR: " + error.message);
-    return;
-  }
-
-  const { error: updateError } = await client
+  await client
     .from("ideas")
-    .update({ votes:(data?.votes||0)+1 })
+    .update({ votes:(data.votes||0)+1 })
     .eq("id", id);
-
-  if(updateError){
-    log("VOTE UPDATE ERROR: " + updateError.message);
-    return;
-  }
 
   loadIdeas();
 }
@@ -220,26 +265,20 @@ async function loadIdeas(){
 
   const { data, error } = await client.from("ideas").select("*");
 
-  if(error){
-    log("LOAD IDEAS ERROR: " + error.message);
-    return;
-  }
-
-  const ideasEl = document.getElementById("ideas");
-  const topEl = document.getElementById("top");
+  if(error) return log(error.message);
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
 
-  ideasEl.innerHTML = sorted.map(i=>`
+  document.getElementById("ideas").innerHTML = sorted.map(i=>`
     <div class="card">
       💡 ${i.text}<br>
-      🗳️ ${i.votes || 0}
+      🗳️ ${i.votes||0}
       <button onclick="vote('${i.id}')">Vote</button>
     </div>
   `).join("");
 
-  topEl.innerHTML =
-    "🏆 Leader: " + (sorted[0]?.text || "None");
+  document.getElementById("leader").innerHTML =
+    sorted[0] ? `🏆 ${sorted[0].text}` : "None";
 }
 
 /* IMAGE UPLOAD */
@@ -253,28 +292,19 @@ async function uploadImage(){
   const file = document.getElementById("file").files[0];
   if(!file) return;
 
-  const name = Date.now() + "-" + file.name;
+  const name = Date.now()+"-"+file.name;
 
-  log("UPLOADING IMAGE...");
+  const { error } = await client.storage
+    .from("campaign")
+    .upload(name, file);
 
-  const { error: uploadError } =
-    await client.storage.from("campaign").upload(name, file);
+  if(error) return log(error.message);
 
-  if(uploadError){
-    log("UPLOAD ERROR: " + uploadError.message);
-    return;
-  }
-
-  const url = client.storage.from("campaign")
+  const url = client.storage
+    .from("campaign")
     .getPublicUrl(name).data.publicUrl;
 
-  const { error: dbError } =
-    await client.from("images").insert({ url });
-
-  if(dbError){
-    log("DB IMAGE ERROR: " + dbError.message);
-    return;
-  }
+  await client.from("images").insert({ url });
 
   loadImages();
 }
@@ -284,16 +314,14 @@ async function loadImages(){
 
   const { data, error } = await client.from("images").select("*");
 
-  if(error){
-    log("LOAD IMAGES ERROR: " + error.message);
-    return;
-  }
+  if(error) return log(error.message);
 
-  const imgEl = document.getElementById("images");
-
-  imgEl.innerHTML = data.map(i=>`
-    <img src="${i.url}">
-  `).join("");
+  document.getElementById("images").innerHTML =
+    data.map(i=>`
+      <div class="imgBox">
+        <img src="${i.url}">
+      </div>
+    `).join("");
 }
 
 </script>
