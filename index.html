@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CNN Election V12 Stable</title>
+<title>CNN Election V13 Stable</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -62,7 +62,7 @@ button{
   cursor:pointer;
 }
 
-/* IDEAS */
+/* CARDS */
 .card{
   background:#111;
   padding:10px;
@@ -71,29 +71,27 @@ button{
   border:1px solid #222;
 }
 
-/* IMAGE FIX (NO STRETCH) */
+/* ✅ FIXED IMAGE SYSTEM (NO STRETCH EVER) */
 .imgBox{
   width:100%;
-  height:140px;
+  aspect-ratio: 16 / 9;
   overflow:hidden;
-  border-radius:8px;
+  border-radius:10px;
   margin-top:10px;
+  background:#000;
 }
 
 .imgBox img{
   width:100%;
   height:100%;
   object-fit:cover;
+  object-position:center;
+  display:block;
 }
 
-/* DEBUG */
-#debug{
-  font-size:12px;
-  background:#000;
+/* STATUS */
+#status{
   color:#00ff99;
-  padding:10px;
-  height:100px;
-  overflow:auto;
 }
 </style>
 </head>
@@ -101,7 +99,7 @@ button{
 <body>
 
 <header>
-  <div>📺 CNN ELECTION V12</div>
+  <div>📺 CNN ELECTION V13</div>
   <div id="status">STARTING...</div>
 </header>
 
@@ -128,12 +126,13 @@ button{
   <!-- RIGHT -->
   <div class="screen">
 
-    <h3>📊 Leader</h3>
+    <h3>🏆 Leader</h3>
     <div id="leader"></div>
 
-    <h3>🖼️ Images</h3>
+    <h3>📸 Images</h3>
+
     <input type="file" id="file"/>
-    <button onclick="uploadImage()">Upload</button>
+    <button onclick="uploadImage()">Upload Image</button>
 
     <div id="images"></div>
 
@@ -141,19 +140,10 @@ button{
 
 </div>
 
-<!-- DEBUG -->
-<div id="debug"></div>
-
 <script>
 
 let client;
 let user = null;
-
-/* DEBUG LOG */
-function log(msg){
-  console.log(msg);
-  document.getElementById("debug").innerHTML += msg + "<br>";
-}
 
 /* INIT */
 window.onload = async () => {
@@ -204,17 +194,16 @@ async function postIdea(){
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
-  const { error } = await client.from("ideas").insert({
+  await client.from("ideas").insert({
     text,
     votes:0
   });
 
-  if(error) return log(error.message);
-
+  document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* VOTE (NO DUPLICATES) */
+/* VOTE (SAFE + NO DUPLICATES) */
 async function vote(id){
 
   if(!user){
@@ -222,7 +211,6 @@ async function vote(id){
     return;
   }
 
-  // CHECK IF ALREADY VOTED
   const { data: existing } = await client
     .from("votes")
     .select("*")
@@ -235,17 +223,11 @@ async function vote(id){
     return;
   }
 
-  // INSERT VOTE RECORD
-  const { error: vErr } = await client
-    .from("votes")
-    .insert({
-      user_id: user.id,
-      idea_id: id
-    });
+  await client.from("votes").insert({
+    user_id: user.id,
+    idea_id: id
+  });
 
-  if(vErr) return log(vErr.message);
-
-  // INCREMENT COUNT
   const { data } = await client
     .from("ideas")
     .select("votes")
@@ -254,7 +236,7 @@ async function vote(id){
 
   await client
     .from("ideas")
-    .update({ votes:(data.votes||0)+1 })
+    .update({ votes:(data?.votes||0)+1 })
     .eq("id", id);
 
   loadIdeas();
@@ -263,9 +245,9 @@ async function vote(id){
 /* LOAD IDEAS */
 async function loadIdeas(){
 
-  const { data, error } = await client.from("ideas").select("*");
+  const { data } = await client.from("ideas").select("*");
 
-  if(error) return log(error.message);
+  if(!data) return;
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
 
@@ -292,13 +274,16 @@ async function uploadImage(){
   const file = document.getElementById("file").files[0];
   if(!file) return;
 
-  const name = Date.now()+"-"+file.name;
+  const name = Date.now() + "-" + file.name;
 
   const { error } = await client.storage
     .from("campaign")
     .upload(name, file);
 
-  if(error) return log(error.message);
+  if(error){
+    console.log(error.message);
+    return;
+  }
 
   const url = client.storage
     .from("campaign")
@@ -312,12 +297,10 @@ async function uploadImage(){
 /* LOAD IMAGES */
 async function loadImages(){
 
-  const { data, error } = await client.from("images").select("*");
-
-  if(error) return log(error.message);
+  const { data } = await client.from("images").select("*");
 
   document.getElementById("images").innerHTML =
-    data.map(i=>`
+    (data || []).map(i=>`
       <div class="imgBox">
         <img src="${i.url}">
       </div>
