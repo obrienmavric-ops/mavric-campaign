@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Night Broadcast</title>
+<title>Election Night CNN Mode</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -11,23 +11,32 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#05050a;
+  background:#05060a;
   color:white;
   overflow-x:hidden;
 }
 
-/* 📺 BROADCAST HEADER */
+/* TOP BAR (CNN STYLE) */
 header{
-  background:#111;
-  padding:12px;
-  font-weight:bold;
-  color:#a855f7;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  padding:10px;
+  background:#111;
+  border-bottom:2px solid #a855f7;
 }
 
-/* LIVE TICKER */
+#live{
+  color:red;
+  font-weight:bold;
+  animation:blink 1s infinite;
+}
+
+@keyframes blink{
+  50%{opacity:0.4;}
+}
+
+/* TICKER */
 #ticker{
   background:#a855f7;
   color:black;
@@ -37,16 +46,22 @@ header{
 }
 
 /* LAYOUT */
-.container{
+.grid{
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  padding:10px;
+  grid-template-columns:1fr 1.2fr;
+  height:calc(100vh - 90px);
 }
 
+/* LEFT PANEL */
 .panel{
-  background:#111;
-  border-radius:10px;
+  background:#0c0c14;
+  padding:10px;
+  overflow:auto;
+  border-right:1px solid #222;
+}
+
+/* RIGHT PANEL */
+.screen{
   padding:10px;
 }
 
@@ -70,13 +85,14 @@ button{
   cursor:pointer;
 }
 
-/* IDEAS */
+/* IDEA CARDS */
 .card{
-  background:#0c0c14;
-  padding:10px;
+  background:#111;
   margin:8px 0;
-  border-radius:8px;
+  padding:10px;
+  border-radius:10px;
   border:1px solid #222;
+  transition:0.3s;
 }
 
 .leader{
@@ -84,15 +100,14 @@ button{
   box-shadow:0 0 10px rgba(255,215,0,0.3);
 }
 
-/* TRENDING HIGHLIGHT */
 .trending{
   border:1px solid #00ff99 !important;
   box-shadow:0 0 12px rgba(0,255,150,0.4);
 }
 
-/* BAR */
+/* BAR GRAPH */
 .bar{
-  height:8px;
+  height:10px;
   background:#222;
   border-radius:10px;
   overflow:hidden;
@@ -105,38 +120,63 @@ button{
   width:0%;
   transition:0.4s;
 }
+
+/* BIG DISPLAY */
+.big{
+  font-size:22px;
+  margin-bottom:10px;
+}
+
+#graph{
+  height:200px;
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  padding:10px;
+}
+.barCol{
+  flex:1;
+  background:#a855f7;
+  transition:0.5s;
+}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div>📺 ELECTION NIGHT LIVE</div>
+  <div>📺 CNN ELECTION LIVE</div>
+  <div id="live">● LIVE</div>
   <div id="status">Connecting...</div>
 </header>
 
-<div id="ticker">Breaking: Live student election results updating in real time...</div>
+<div id="ticker">Breaking: Election night coverage begins...</div>
 
-<div class="container">
+<div class="grid">
 
-  <!-- LEFT -->
+  <!-- LEFT CONTROL ROOM -->
   <div class="panel">
-    <h3>💡 Ideas</h3>
+    <h3>🎛 Control Room</h3>
 
     <input id="ideaInput" placeholder="Enter idea"/>
-    <button onclick="postIdea()">Post</button>
+    <button onclick="postIdea()">Add Idea</button>
+
+    <button onclick="manualRefresh()">Refresh</button>
+    <button onclick="randomTicker()">Breaking Update</button>
 
     <div id="ideas"></div>
   </div>
 
-  <!-- RIGHT -->
-  <div class="panel">
-    <h3>📊 Broadcast Control</h3>
+  <!-- RIGHT LIVE SCREEN -->
+  <div class="screen">
 
-    <button onclick="manualRefresh()">Refresh Feed</button>
-    <button onclick="simulateTicker()">Update Ticker</button>
+    <div class="big">📊 LIVE RESULTS</div>
 
-    <p id="user">Not logged in</p>
+    <div id="topIdea">Loading...</div>
+
+    <h4>📈 Vote Momentum</h4>
+    <div id="graph"></div>
+
   </div>
 
 </div>
@@ -144,7 +184,6 @@ button{
 <script>
 
 let client=null;
-let user=null;
 let lastVotes={};
 
 /* INIT */
@@ -157,30 +196,19 @@ window.onload=()=>{
 
   status.innerText="LIVE";
 
-  client.auth.onAuthStateChange((_,session)=>{
-    user=session?.user||null;
-    userDiv.innerText=user?user.email:"Not logged in";
-  });
-
   loadIdeas();
 
-  /* ⚡ LIVE REAL-TIME */
-  client
-    .channel('ideas-live')
+  /* ⚡ REALTIME */
+  client.channel('ideas-live')
     .on('postgres_changes',
-      { event:'*', schema:'public', table:'ideas' },
-      payload=>{
-        loadIdeas();
-      }
+      {event:'*',schema:'public',table:'ideas'},
+      payload=>loadIdeas()
     )
     .subscribe();
 };
 
-/* POST IDEA */
+/* POST */
 async function postIdea(){
-
-  if(!client) return;
-
   const text=ideaInput.value;
   if(!text) return;
 
@@ -188,7 +216,7 @@ async function postIdea(){
   ideaInput.value="";
 }
 
-/* LOAD + TRENDING LOGIC */
+/* LOAD */
 async function loadIdeas(){
 
   const {data}=await client.from("ideas").select("*");
@@ -197,51 +225,62 @@ async function loadIdeas(){
   const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
   const total=sorted.reduce((a,b)=>a+(b.votes||0),0)||1;
 
+  /* LEFT LIST */
   ideas.innerHTML=sorted.map((i,index)=>{
 
     const percent=((i.votes||0)/total*100).toFixed(1);
+    const prev=lastVotes[i.id]||0;
+    const spike=(i.votes||0)-prev;
 
-    /* 🔥 TRENDING DETECTION */
-    const previous=lastVotes[i.id]||0;
-    const spike=(i.votes||0)-previous;
-
-    const isTrending=spike>=2;
+    const trending=spike>=2;
 
     lastVotes[i.id]=i.votes||0;
 
     return `
-      <div class="card
-        ${index===0?"leader":""}
-        ${isTrending?"trending":""}
-      ">
-
-        <b>#${index+1}</b> 💡 ${i.text}
-
-        <div>🗳️ ${i.votes||0} (${percent}%)</div>
+      <div class="card ${index===0?"leader":""} ${trending?"trending":""}">
+        <b>#${index+1}</b> ${i.text}
+        <div>🗳️ ${i.votes||0}</div>
 
         <div class="bar">
           <div class="fill" style="width:${percent}%"></div>
         </div>
-
       </div>
     `;
   }).join("");
+
+  /* TOP IDEA */
+  topIdea.innerHTML = `
+    🏆 Leader: <b>${sorted[0]?.text || "None"}</b>
+  `;
+
+  /* GRAPH */
+  renderGraph(sorted, total);
 }
 
-/* BROADCAST FEATURES */
-function manualRefresh(){
-  loadIdeas();
+/* GRAPH VISUAL */
+function renderGraph(data,total){
+
+  graph.innerHTML = data.slice(0,5).map(i=>{
+    const h = ((i.votes||0)/total)*100;
+    return `<div class="barCol" style="height:${h}%"></div>`;
+  }).join("");
 }
 
-function simulateTicker(){
-  const messages=[
-    "Breaking: Voting surge detected!",
-    "Live update: Leader expanding lead!",
-    "Alert: New idea trending!",
-    "Broadcast: Student engagement rising!"
+/* TICKER */
+function randomTicker(){
+  const msgs=[
+    "Breaking: Vote surge detected!",
+    "Live update: Leader expanding!",
+    "CNN Alert: New trending idea!",
+    "Election desk: Tight race continues!"
   ];
 
-  ticker.innerText=messages[Math.floor(Math.random()*messages.length)];
+  ticker.innerText = msgs[Math.floor(Math.random()*msgs.length)];
+}
+
+/* MANUAL */
+function manualRefresh(){
+  loadIdeas();
 }
 
 </script>
