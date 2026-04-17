@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election CNN V9</title>
+<title>CNN Election V10 DEBUG</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,29 +15,22 @@ body{
   color:white;
 }
 
-/* HEADER */
 header{
-  display:flex;
-  justify-content:space-between;
   padding:10px;
   background:#111;
   border-bottom:2px solid #a855f7;
+  display:flex;
+  justify-content:space-between;
 }
 
-#live{
-  color:red;
-  font-weight:bold;
-  animation:blink 1s infinite;
-}
-@keyframes blink{50%{opacity:0.3;}}
+#live{color:red;font-weight:bold;}
 
 .container{
   display:grid;
-  grid-template-columns:1fr 1.2fr;
-  height:calc(100vh - 140px);
+  grid-template-columns:1fr 1fr;
+  height:calc(100vh - 120px);
 }
 
-/* PANELS */
 .panel{
   padding:10px;
   background:#0b0c18;
@@ -49,10 +42,9 @@ header{
   padding:10px;
 }
 
-/* INPUTS */
 input{
-  padding:10px;
   width:70%;
+  padding:10px;
   border-radius:8px;
   border:none;
   background:#1a1a1a;
@@ -69,35 +61,29 @@ button{
   cursor:pointer;
 }
 
-/* CARDS */
 .card{
   background:#111;
-  margin:10px 0;
   padding:10px;
+  margin:10px 0;
   border-radius:10px;
+  border:1px solid #222;
 }
 
-/* IMAGE GRID */
-.images{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-  gap:10px;
-}
-
-.images img{
+img{
   width:100%;
-  height:120px;
+  height:140px;
   object-fit:cover;
   border-radius:8px;
 }
 
-/* MISSION */
-.mission{
-  background:linear-gradient(90deg,#a855f7,#111);
+.debug{
+  background:#000;
+  color:#00ff99;
   padding:10px;
-  margin:10px;
-  border-radius:10px;
-  font-weight:bold;
+  font-size:12px;
+  height:120px;
+  overflow:auto;
+  border-top:1px solid #333;
 }
 </style>
 </head>
@@ -105,21 +91,9 @@ button{
 <body>
 
 <header>
-  <div>📺 MAVRIC ELECTION CNN</div>
+  <div>📺 CNN ELECTION DEBUG V10</div>
   <div id="live">● LIVE</div>
-  <div id="status">STARTING...</div>
 </header>
-
-<!-- MISSION STATEMENT -->
-<div class="mission">
-  “Your Voice. My Actions. Real Change for Our School.”
-</div>
-
-<div style="padding:10px;background:#0b0c18;">
-  <button onclick="login()">🔐 Login</button>
-  <button onclick="logout()">Logout</button>
-  <div id="user">Not logged in</div>
-</div>
 
 <div class="container">
 
@@ -135,33 +109,40 @@ button{
 
     <hr/>
 
-    <h3>📸 Upload Images (Owner Only)</h3>
-
+    <h3>📸 Upload Image</h3>
     <input type="file" id="file"/>
-    <button onclick="uploadImage()">Upload Image</button>
+    <button onclick="uploadImage()">Upload</button>
 
   </div>
 
   <!-- RIGHT -->
   <div class="screen">
 
-    <h2>📊 LIVE RESULTS</h2>
-    <div id="topIdea"></div>
+    <h3>📊 Live Ideas</h3>
+    <div id="top"></div>
 
-    <h3>🖼️ Campaign Feed</h3>
-    <div class="images" id="gallery"></div>
+    <h3>🖼️ Images</h3>
+    <div id="images"></div>
 
   </div>
 
 </div>
+
+<!-- DEBUG CONSOLE -->
+<div class="debug" id="debug"></div>
 
 <script>
 
 let client;
 let user = null;
 
-/* 🔒 PUT YOUR USER ID HERE */
+/* OWNER LOCK (optional later) */
 const OWNER_ID = "18d43a56-6376-458e-9301-add699803f40";
+
+function log(msg){
+  console.log(msg);
+  document.getElementById("debug").innerHTML += msg + "<br>";
+}
 
 /* INIT */
 window.onload = async () => {
@@ -172,76 +153,101 @@ window.onload = async () => {
   );
 
   const { data } = await client.auth.getUser();
-  user = data?.user || null;
+  user = data?.user;
 
-  updateUser();
+  log("User loaded: " + (user?.email || "none"));
 
   loadIdeas();
   loadImages();
-
 };
 
-/* AUTH */
-async function login(){
-  await client.auth.signInWithOAuth({
-    provider:"google",
-    options:{ redirectTo: window.location.origin }
-  });
-}
-
-async function logout(){
-  await client.auth.signOut();
-  user = null;
-  updateUser();
-}
-
-function updateUser(){
-  document.getElementById("user").innerText =
-    user ? `Logged in: ${user.email}` : "Not logged in";
-}
-
-/* IDEAS */
+/* POST IDEA */
 async function postIdea(){
 
-  if(!user) return alert("Login required");
+  if(!user){
+    alert("Login required");
+    return;
+  }
 
   const text = document.getElementById("ideaInput").value;
-  if(!text) return;
 
-  await client.from("ideas").insert({
+  log("POST IDEA CLICKED: " + text);
+
+  const { error } = await client.from("ideas").insert({
     text,
     votes:0
   });
 
-  document.getElementById("ideaInput").value="";
+  if(error){
+    log("IDEA ERROR: " + error.message);
+    return;
+  }
+
   loadIdeas();
 }
 
+/* VOTE */
+async function vote(id){
+
+  log("VOTE CLICKED: " + id);
+
+  const { data, error } = await client
+    .from("ideas")
+    .select("votes")
+    .eq("id", id)
+    .single();
+
+  if(error){
+    log("VOTE SELECT ERROR: " + error.message);
+    return;
+  }
+
+  const { error: updateError } = await client
+    .from("ideas")
+    .update({ votes:(data?.votes||0)+1 })
+    .eq("id", id);
+
+  if(updateError){
+    log("VOTE UPDATE ERROR: " + updateError.message);
+    return;
+  }
+
+  loadIdeas();
+}
+
+/* LOAD IDEAS */
 async function loadIdeas(){
 
-  const { data } = await client.from("ideas").select("*");
-  if(!data) return;
+  const { data, error } = await client.from("ideas").select("*");
+
+  if(error){
+    log("LOAD IDEAS ERROR: " + error.message);
+    return;
+  }
+
+  const ideasEl = document.getElementById("ideas");
+  const topEl = document.getElementById("top");
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
 
-  ideas.innerHTML = sorted.map(i=>`
+  ideasEl.innerHTML = sorted.map(i=>`
     <div class="card">
-      💡 ${i.text}
-      <div>🗳️ ${i.votes||0}</div>
+      💡 ${i.text}<br>
+      🗳️ ${i.votes || 0}
+      <button onclick="vote('${i.id}')">Vote</button>
     </div>
   `).join("");
 
-  topIdea.innerHTML =
-    "🏆 Leader: <b>" + (sorted[0]?.text || "None") + "</b>";
+  topEl.innerHTML =
+    "🏆 Leader: " + (sorted[0]?.text || "None");
 }
 
-/* IMAGE UPLOAD (ONLY OWNER) */
+/* IMAGE UPLOAD */
 async function uploadImage(){
 
-  if(!user) return alert("Login required");
-
-  if(user.id !== OWNER_ID){
-    return alert("Only Mavric can upload images");
+  if(!user){
+    alert("Login required");
+    return;
   }
 
   const file = document.getElementById("file").files[0];
@@ -249,14 +255,26 @@ async function uploadImage(){
 
   const name = Date.now() + "-" + file.name;
 
-  await client.storage.from("campaign").upload(name, file);
+  log("UPLOADING IMAGE...");
+
+  const { error: uploadError } =
+    await client.storage.from("campaign").upload(name, file);
+
+  if(uploadError){
+    log("UPLOAD ERROR: " + uploadError.message);
+    return;
+  }
 
   const url = client.storage.from("campaign")
     .getPublicUrl(name).data.publicUrl;
 
-  await client.from("images").insert({
-    url
-  });
+  const { error: dbError } =
+    await client.from("images").insert({ url });
+
+  if(dbError){
+    log("DB IMAGE ERROR: " + dbError.message);
+    return;
+  }
 
   loadImages();
 }
@@ -264,10 +282,16 @@ async function uploadImage(){
 /* LOAD IMAGES */
 async function loadImages(){
 
-  const { data } = await client.from("images").select("*");
-  if(!data) return;
+  const { data, error } = await client.from("images").select("*");
 
-  gallery.innerHTML = data.map(i=>`
+  if(error){
+    log("LOAD IMAGES ERROR: " + error.message);
+    return;
+  }
+
+  const imgEl = document.getElementById("images");
+
+  imgEl.innerHTML = data.map(i=>`
     <img src="${i.url}">
   `).join("");
 }
