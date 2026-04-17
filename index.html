@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Platform</title>
+<title>Election Night Broadcast</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -11,15 +11,53 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#0b0b12;
+  background:#05050a;
   color:white;
-  text-align:center;
+  overflow-x:hidden;
 }
 
-#status{
-  padding:10px;
+/* 📺 BROADCAST HEADER */
+header{
   background:#111;
+  padding:12px;
+  font-weight:bold;
   color:#a855f7;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+/* LIVE TICKER */
+#ticker{
+  background:#a855f7;
+  color:black;
+  padding:6px;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+/* LAYOUT */
+.container{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:10px;
+}
+
+.panel{
+  background:#111;
+  border-radius:10px;
+  padding:10px;
+}
+
+/* INPUTS */
+input{
+  padding:10px;
+  width:80%;
+  border-radius:8px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
 }
 
 button{
@@ -32,156 +70,178 @@ button{
   cursor:pointer;
 }
 
-input{
-  padding:10px;
-  margin:6px;
-  border-radius:8px;
-  border:none;
-  background:#1a1a1a;
-  color:white;
-}
-
+/* IDEAS */
 .card{
-  background:#111;
-  margin:10px auto;
+  background:#0c0c14;
   padding:10px;
-  border-radius:10px;
-  max-width:500px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #222;
 }
 
-.star{
-  font-size:50px;
-  cursor:pointer;
+.leader{
+  border:1px solid gold;
+  box-shadow:0 0 10px rgba(255,215,0,0.3);
+}
+
+/* TRENDING HIGHLIGHT */
+.trending{
+  border:1px solid #00ff99 !important;
+  box-shadow:0 0 12px rgba(0,255,150,0.4);
+}
+
+/* BAR */
+.bar{
+  height:8px;
+  background:#222;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:5px;
+}
+
+.fill{
+  height:100%;
+  background:linear-gradient(90deg,#a855f7,gold);
+  width:0%;
+  transition:0.4s;
 }
 </style>
 </head>
 
 <body>
 
-<div id="status">Starting...</div>
+<header>
+  <div>📺 ELECTION NIGHT LIVE</div>
+  <div id="status">Connecting...</div>
+</header>
 
-<h1>🗳️ MAVRIC PLATFORM</h1>
+<div id="ticker">Breaking: Live student election results updating in real time...</div>
 
-<button id="loginBtn">Login</button>
-<button id="logoutBtn">Logout</button>
+<div class="container">
 
-<div id="user">Not logged in</div>
+  <!-- LEFT -->
+  <div class="panel">
+    <h3>💡 Ideas</h3>
 
-<h3>💡 Ideas</h3>
+    <input id="ideaInput" placeholder="Enter idea"/>
+    <button onclick="postIdea()">Post</button>
 
-<input id="ideaInput" placeholder="Idea"/>
-<button id="postBtn">Post</button>
+    <div id="ideas"></div>
+  </div>
 
-<div id="ideas"></div>
+  <!-- RIGHT -->
+  <div class="panel">
+    <h3>📊 Broadcast Control</h3>
 
-<h3>🎮 Game</h3>
+    <button onclick="manualRefresh()">Refresh Feed</button>
+    <button onclick="simulateTicker()">Update Ticker</button>
 
-<button id="startBtn">Start</button>
-<div class="star" id="star">⭐</div>
-<div id="score">0</div>
+    <p id="user">Not logged in</p>
+  </div>
+
+</div>
 
 <script>
-console.log("APP STARTED");
 
-let client = null;
-let user = null;
-let running = false;
-let score = 0;
+let client=null;
+let user=null;
+let lastVotes={};
 
-/* BUTTONS ALWAYS WORK */
-document.getElementById("loginBtn").onclick = () => {
-  alert("Login clicked");
+/* INIT */
+window.onload=()=>{
 
-  if(!client){
-    alert("Backend not ready");
-    return;
-  }
+  client = window.supabase.createClient(
+    "https://didfhlfvdvurkfwbipli.supabase.co",
+    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+  );
 
-  client.auth.signInWithOAuth({provider:"google"});
-};
+  status.innerText="LIVE";
 
-document.getElementById("logoutBtn").onclick = () => {
-  alert("Logout clicked");
-  client?.auth.signOut();
-};
+  client.auth.onAuthStateChange((_,session)=>{
+    user=session?.user||null;
+    userDiv.innerText=user?user.email:"Not logged in";
+  });
 
-document.getElementById("postBtn").onclick = async () => {
-  alert("Post clicked");
-
-  if(!client) return alert("Backend not ready");
-  if(!user) return alert("Login first");
-
-  const text = document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await client.from("ideas").insert({text, votes:0});
   loadIdeas();
+
+  /* ⚡ LIVE REAL-TIME */
+  client
+    .channel('ideas-live')
+    .on('postgres_changes',
+      { event:'*', schema:'public', table:'ideas' },
+      payload=>{
+        loadIdeas();
+      }
+    )
+    .subscribe();
 };
 
-/* GAME */
-document.getElementById("startBtn").onclick = () => {
-  alert("Game started");
-
-  running = true;
-  score = 0;
-  document.getElementById("score").innerText = 0;
-
-  setTimeout(()=>{
-    running = false;
-    alert("Score: " + score);
-  }, 6000);
-};
-
-document.getElementById("star").onclick = () => {
-  if(!running) return;
-  score++;
-  document.getElementById("score").innerText = score;
-};
-
-/* INIT SUPABASE */
-window.onload = () => {
-
-  if(!window.supabase){
-    document.getElementById("status").innerText = "Supabase failed to load";
-    return;
-  }
-
-  try{
-    client = window.supabase.createClient(
-      "https://didfhlfvdvurkfwbipli.supabase.co",
-      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-    );
-
-    document.getElementById("status").innerText = "Connected";
-
-    client.auth.onAuthStateChange((_,session)=>{
-      user = session?.user || null;
-      document.getElementById("user").innerText =
-        user ? user.email : "Not logged in";
-    });
-
-    loadIdeas();
-
-  } catch(e){
-    console.error(e);
-    document.getElementById("status").innerText = "Supabase error";
-  }
-};
-
-/* LOAD IDEAS */
-async function loadIdeas(){
+/* POST IDEA */
+async function postIdea(){
 
   if(!client) return;
 
-  const {data} = await client.from("ideas").select("*");
+  const text=ideaInput.value;
+  if(!text) return;
 
-  document.getElementById("ideas").innerHTML =
-    (data || []).map(i=>`
-      <div class="card">
-        💡 ${i.text}
-        <div>🗳️ ${i.votes||0}</div>
+  await client.from("ideas").insert({text,votes:0});
+  ideaInput.value="";
+}
+
+/* LOAD + TRENDING LOGIC */
+async function loadIdeas(){
+
+  const {data}=await client.from("ideas").select("*");
+  if(!data) return;
+
+  const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total=sorted.reduce((a,b)=>a+(b.votes||0),0)||1;
+
+  ideas.innerHTML=sorted.map((i,index)=>{
+
+    const percent=((i.votes||0)/total*100).toFixed(1);
+
+    /* 🔥 TRENDING DETECTION */
+    const previous=lastVotes[i.id]||0;
+    const spike=(i.votes||0)-previous;
+
+    const isTrending=spike>=2;
+
+    lastVotes[i.id]=i.votes||0;
+
+    return `
+      <div class="card
+        ${index===0?"leader":""}
+        ${isTrending?"trending":""}
+      ">
+
+        <b>#${index+1}</b> 💡 ${i.text}
+
+        <div>🗳️ ${i.votes||0} (${percent}%)</div>
+
+        <div class="bar">
+          <div class="fill" style="width:${percent}%"></div>
+        </div>
+
       </div>
-    `).join("");
+    `;
+  }).join("");
+}
+
+/* BROADCAST FEATURES */
+function manualRefresh(){
+  loadIdeas();
+}
+
+function simulateTicker(){
+  const messages=[
+    "Breaking: Voting surge detected!",
+    "Live update: Leader expanding lead!",
+    "Alert: New idea trending!",
+    "Broadcast: Student engagement rising!"
+  ];
+
+  ticker.innerText=messages[Math.floor(Math.random()*messages.length)];
 }
 
 </script>
