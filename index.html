@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CNN Election V8 + Auth</title>
+<title>Mavric Election CNN V9</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -11,10 +11,11 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#060713;
+  background:#070812;
   color:white;
 }
 
+/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
@@ -25,23 +26,18 @@ header{
 
 #live{
   color:red;
-  animation:blink 1s infinite;
   font-weight:bold;
+  animation:blink 1s infinite;
 }
 @keyframes blink{50%{opacity:0.3;}}
-
-#ticker{
-  background:#a855f7;
-  color:black;
-  padding:6px;
-}
 
 .container{
   display:grid;
   grid-template-columns:1fr 1.2fr;
-  height:calc(100vh - 110px);
+  height:calc(100vh - 140px);
 }
 
+/* PANELS */
 .panel{
   padding:10px;
   background:#0b0c18;
@@ -50,9 +46,10 @@ header{
 }
 
 .screen{
-  padding:15px;
+  padding:10px;
 }
 
+/* INPUTS */
 input{
   padding:10px;
   width:70%;
@@ -72,35 +69,35 @@ button{
   cursor:pointer;
 }
 
+/* CARDS */
 .card{
   background:#111;
   margin:10px 0;
   padding:10px;
   border-radius:10px;
-  border:1px solid #222;
 }
 
-.leader{
-  border:1px solid gold;
+/* IMAGE GRID */
+.images{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  gap:10px;
 }
 
-.trending{
-  border:1px solid #00ff99 !important;
+.images img{
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  border-radius:8px;
 }
 
-/* BAR */
-.bar{
-  height:10px;
-  background:#222;
+/* MISSION */
+.mission{
+  background:linear-gradient(90deg,#a855f7,#111);
+  padding:10px;
+  margin:10px;
   border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
-}
-
-.fill{
-  height:100%;
-  background:linear-gradient(90deg,#a855f7,gold);
-  transition:0.5s;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -108,16 +105,18 @@ button{
 <body>
 
 <header>
-  <div>📺 CNN ELECTION LIVE</div>
+  <div>📺 MAVRIC ELECTION CNN</div>
   <div id="live">● LIVE</div>
   <div id="status">STARTING...</div>
 </header>
 
-<div id="ticker">Breaking: Election broadcast online</div>
+<!-- MISSION STATEMENT -->
+<div class="mission">
+  “Your Voice. My Actions. Real Change for Our School.”
+</div>
 
-<!-- AUTH PANEL -->
-<div style="padding:10px; background:#0b0c18;">
-  <button onclick="login()">🔐 Login with Google</button>
+<div style="padding:10px;background:#0b0c18;">
+  <button onclick="login()">🔐 Login</button>
   <button onclick="logout()">Logout</button>
   <div id="user">Not logged in</div>
 </div>
@@ -127,23 +126,30 @@ button{
   <!-- LEFT -->
   <div class="panel">
 
-    <h3>🎛 Control Room</h3>
+    <h3>💡 Ideas</h3>
 
     <input id="ideaInput" placeholder="Enter idea"/>
-    <button onclick="postIdea()">Post Idea</button>
-
-    <button onclick="loadIdeas()">Refresh</button>
+    <button onclick="postIdea()">Post</button>
 
     <div id="ideas"></div>
+
+    <hr/>
+
+    <h3>📸 Upload Images (Owner Only)</h3>
+
+    <input type="file" id="file"/>
+    <button onclick="uploadImage()">Upload Image</button>
+
   </div>
 
   <!-- RIGHT -->
   <div class="screen">
 
     <h2>📊 LIVE RESULTS</h2>
+    <div id="topIdea"></div>
 
-    <div id="topIdea">Loading...</div>
-    <div id="graph"></div>
+    <h3>🖼️ Campaign Feed</h3>
+    <div class="images" id="gallery"></div>
 
   </div>
 
@@ -151,9 +157,11 @@ button{
 
 <script>
 
-let client = null;
-let currentUser = null;
-let lastVotes = {};
+let client;
+let user = null;
+
+/* 🔒 PUT YOUR USER ID HERE */
+const OWNER_ID = "18d43a56-6376-458e-9301-add699803f40";
 
 /* INIT */
 window.onload = async () => {
@@ -164,147 +172,104 @@ window.onload = async () => {
   );
 
   const { data } = await client.auth.getUser();
-  currentUser = data?.user || null;
+  user = data?.user || null;
 
   updateUser();
-  document.getElementById("status").innerText = "LIVE";
 
   loadIdeas();
+  loadImages();
 
-  client.channel('ideas-live')
-    .on('postgres_changes',
-      { event:'*', schema:'public', table:'ideas' },
-      () => loadIdeas()
-    )
-    .subscribe();
 };
 
 /* AUTH */
 async function login(){
   await client.auth.signInWithOAuth({
     provider:"google",
-    options:{
-      redirectTo: window.location.origin
-    }
+    options:{ redirectTo: window.location.origin }
   });
 }
 
 async function logout(){
   await client.auth.signOut();
-  currentUser = null;
+  user = null;
   updateUser();
 }
 
 function updateUser(){
   document.getElementById("user").innerText =
-    currentUser ? `Logged in: ${currentUser.email}` : "Not logged in";
+    user ? `Logged in: ${user.email}` : "Not logged in";
 }
 
-/* POST IDEA (LOCKED) */
+/* IDEAS */
 async function postIdea(){
 
-  if(!currentUser){
-    alert("Login required");
-    return;
-  }
+  if(!user) return alert("Login required");
 
   const text = document.getElementById("ideaInput").value;
   if(!text) return;
 
   await client.from("ideas").insert({
     text,
-    votes:0,
-    created_by: currentUser.id
+    votes:0
   });
 
   document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* VOTE (LOCKED + ONE PER USER) */
-async function vote(id){
-
-  if(!currentUser){
-    alert("Login required");
-    return;
-  }
-
-  const { data: existing } = await client
-    .from("votes")
-    .select("*")
-    .eq("user_id", currentUser.id)
-    .eq("idea_id", id)
-    .single();
-
-  if(existing){
-    alert("Already voted on this idea");
-    return;
-  }
-
-  await client.from("votes").insert({
-    user_id: currentUser.id,
-    idea_id: id
-  });
-
-  const { data } = await client
-    .from("ideas")
-    .select("votes")
-    .eq("id", id)
-    .single();
-
-  await client
-    .from("ideas")
-    .update({ votes:(data?.votes||0)+1 })
-    .eq("id", id);
-
-  loadIdeas();
-}
-
-/* LOAD */
 async function loadIdeas(){
-
-  const ideasEl = document.getElementById("ideas");
-  const topEl = document.getElementById("topIdea");
-  const graphEl = document.getElementById("graph");
 
   const { data } = await client.from("ideas").select("*");
   if(!data) return;
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = sorted.reduce((a,b)=>a+(b.votes||0),0)||1;
 
-  ideasEl.innerHTML = sorted.map(i=>{
+  ideas.innerHTML = sorted.map(i=>`
+    <div class="card">
+      💡 ${i.text}
+      <div>🗳️ ${i.votes||0}</div>
+    </div>
+  `).join("");
 
-    const percent = ((i.votes||0)/total*100).toFixed(1);
-
-    const prev = lastVotes[i.id] || 0;
-    const spike = (i.votes||0)-prev;
-
-    const trending = spike >= 2;
-
-    lastVotes[i.id] = i.votes || 0;
-
-    return `
-      <div class="card ${trending?"trending":""} ${sorted[0]?.id===i.id?"leader":""}">
-        💡 ${i.text}
-        <div>🗳️ ${i.votes||0}</div>
-
-        <button onclick="vote('${i.id}')">Vote</button>
-
-        <div class="bar">
-          <div class="fill" style="width:${percent}%"></div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  topEl.innerHTML =
+  topIdea.innerHTML =
     "🏆 Leader: <b>" + (sorted[0]?.text || "None") + "</b>";
+}
 
-  graphEl.innerHTML = sorted.slice(0,5).map(i=>{
-    const h = ((i.votes||0)/total)*100;
-    return `<div style="height:${h}%; width:20%; background:#a855f7;"></div>`;
-  }).join("");
+/* IMAGE UPLOAD (ONLY OWNER) */
+async function uploadImage(){
+
+  if(!user) return alert("Login required");
+
+  if(user.id !== OWNER_ID){
+    return alert("Only Mavric can upload images");
+  }
+
+  const file = document.getElementById("file").files[0];
+  if(!file) return;
+
+  const name = Date.now() + "-" + file.name;
+
+  await client.storage.from("campaign").upload(name, file);
+
+  const url = client.storage.from("campaign")
+    .getPublicUrl(name).data.publicUrl;
+
+  await client.from("images").insert({
+    url
+  });
+
+  loadImages();
+}
+
+/* LOAD IMAGES */
+async function loadImages(){
+
+  const { data } = await client.from("images").select("*");
+  if(!data) return;
+
+  gallery.innerHTML = data.map(i=>`
+    <img src="${i.url}">
+  `).join("");
 }
 
 </script>
