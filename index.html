@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Night CNN Mode</title>
+<title>Election Night CNN V4.1</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -13,14 +13,12 @@ body{
   font-family:Arial;
   background:#05060a;
   color:white;
-  overflow-x:hidden;
 }
 
-/* TOP BAR (CNN STYLE) */
+/* HEADER */
 header{
   display:flex;
   justify-content:space-between;
-  align-items:center;
   padding:10px;
   background:#111;
   border-bottom:2px solid #a855f7;
@@ -31,10 +29,7 @@ header{
   font-weight:bold;
   animation:blink 1s infinite;
 }
-
-@keyframes blink{
-  50%{opacity:0.4;}
-}
+@keyframes blink{50%{opacity:0.4;}}
 
 /* TICKER */
 #ticker{
@@ -45,22 +40,21 @@ header{
   overflow:hidden;
 }
 
-/* LAYOUT */
-.grid{
+/* GRID */
+.container{
   display:grid;
-  grid-template-columns:1fr 1.2fr;
+  grid-template-columns:1fr 1fr;
   height:calc(100vh - 90px);
 }
 
-/* LEFT PANEL */
+/* PANELS */
 .panel{
-  background:#0c0c14;
   padding:10px;
   overflow:auto;
+  background:#0c0c14;
   border-right:1px solid #222;
 }
 
-/* RIGHT PANEL */
 .screen{
   padding:10px;
 }
@@ -68,7 +62,7 @@ header{
 /* INPUTS */
 input{
   padding:10px;
-  width:80%;
+  width:75%;
   border-radius:8px;
   border:none;
   background:#1a1a1a;
@@ -77,7 +71,7 @@ input{
 
 button{
   padding:10px;
-  margin:6px;
+  margin:5px;
   background:#a855f7;
   border:none;
   border-radius:8px;
@@ -85,14 +79,13 @@ button{
   cursor:pointer;
 }
 
-/* IDEA CARDS */
+/* CARDS */
 .card{
   background:#111;
   margin:8px 0;
   padding:10px;
   border-radius:10px;
   border:1px solid #222;
-  transition:0.3s;
 }
 
 .leader{
@@ -105,7 +98,7 @@ button{
   box-shadow:0 0 12px rgba(0,255,150,0.4);
 }
 
-/* BAR GRAPH */
+/* BAR */
 .bar{
   height:10px;
   background:#222;
@@ -118,26 +111,21 @@ button{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
   width:0%;
-  transition:0.4s;
+  transition:0.5s;
 }
 
-/* BIG DISPLAY */
-.big{
-  font-size:22px;
-  margin-bottom:10px;
-}
-
+/* GRAPH */
 #graph{
   height:200px;
   display:flex;
   align-items:flex-end;
   gap:8px;
-  padding:10px;
+  margin-top:10px;
 }
 .barCol{
   flex:1;
   background:#a855f7;
-  transition:0.5s;
+  transition:0.4s;
 }
 </style>
 </head>
@@ -150,31 +138,31 @@ button{
   <div id="status">Connecting...</div>
 </header>
 
-<div id="ticker">Breaking: Election night coverage begins...</div>
+<div id="ticker">Breaking: Election coverage has started...</div>
 
-<div class="grid">
+<div class="container">
 
-  <!-- LEFT CONTROL ROOM -->
+  <!-- LEFT -->
   <div class="panel">
     <h3>🎛 Control Room</h3>
 
     <input id="ideaInput" placeholder="Enter idea"/>
-    <button onclick="postIdea()">Add Idea</button>
+    <button onclick="postIdea()">Post</button>
 
-    <button onclick="manualRefresh()">Refresh</button>
-    <button onclick="randomTicker()">Breaking Update</button>
+    <button onclick="loadIdeas()">Refresh</button>
+    <button onclick="randomTicker()">Breaking News</button>
 
     <div id="ideas"></div>
   </div>
 
-  <!-- RIGHT LIVE SCREEN -->
+  <!-- RIGHT -->
   <div class="screen">
 
-    <div class="big">📊 LIVE RESULTS</div>
+    <h2>📊 LIVE RESULTS</h2>
 
     <div id="topIdea">Loading...</div>
 
-    <h4>📈 Vote Momentum</h4>
+    <h3>📈 Vote Graph</h3>
     <div id="graph"></div>
 
   </div>
@@ -198,7 +186,7 @@ window.onload=()=>{
 
   loadIdeas();
 
-  /* ⚡ REALTIME */
+  /* REALTIME */
   client.channel('ideas-live')
     .on('postgres_changes',
       {event:'*',schema:'public',table:'ideas'},
@@ -207,13 +195,30 @@ window.onload=()=>{
     .subscribe();
 };
 
-/* POST */
+/* POST IDEA */
 async function postIdea(){
   const text=ideaInput.value;
   if(!text) return;
 
   await client.from("ideas").insert({text,votes:0});
   ideaInput.value="";
+}
+
+/* VOTE */
+async function vote(id){
+
+  const {data}=await client
+    .from("ideas")
+    .select("votes")
+    .eq("id",id)
+    .single();
+
+  await client
+    .from("ideas")
+    .update({votes:(data.votes||0)+1})
+    .eq("id",id);
+
+  loadIdeas();
 }
 
 /* LOAD */
@@ -225,21 +230,23 @@ async function loadIdeas(){
   const sorted=data.sort((a,b)=>(b.votes||0)-(a.votes||0));
   const total=sorted.reduce((a,b)=>a+(b.votes||0),0)||1;
 
-  /* LEFT LIST */
   ideas.innerHTML=sorted.map((i,index)=>{
 
     const percent=((i.votes||0)/total*100).toFixed(1);
+
     const prev=lastVotes[i.id]||0;
     const spike=(i.votes||0)-prev;
-
     const trending=spike>=2;
 
     lastVotes[i.id]=i.votes||0;
 
     return `
       <div class="card ${index===0?"leader":""} ${trending?"trending":""}">
-        <b>#${index+1}</b> ${i.text}
+        <b>#${index+1}</b> 💡 ${i.text}
+
         <div>🗳️ ${i.votes||0}</div>
+
+        <button onclick="vote('${i.id}')">Vote</button>
 
         <div class="bar">
           <div class="fill" style="width:${percent}%"></div>
@@ -248,20 +255,17 @@ async function loadIdeas(){
     `;
   }).join("");
 
-  /* TOP IDEA */
-  topIdea.innerHTML = `
-    🏆 Leader: <b>${sorted[0]?.text || "None"}</b>
-  `;
+  topIdea.innerHTML =
+    "🏆 Leader: <b>" + (sorted[0]?.text || "None") + "</b>";
 
-  /* GRAPH */
-  renderGraph(sorted, total);
+  renderGraph(sorted,total);
 }
 
-/* GRAPH VISUAL */
+/* GRAPH */
 function renderGraph(data,total){
 
-  graph.innerHTML = data.slice(0,5).map(i=>{
-    const h = ((i.votes||0)/total)*100;
+  graph.innerHTML=data.slice(0,5).map(i=>{
+    const h=((i.votes||0)/total)*100;
     return `<div class="barCol" style="height:${h}%"></div>`;
   }).join("");
 }
@@ -270,17 +274,11 @@ function renderGraph(data,total){
 function randomTicker(){
   const msgs=[
     "Breaking: Vote surge detected!",
-    "Live update: Leader expanding!",
-    "CNN Alert: New trending idea!",
-    "Election desk: Tight race continues!"
+    "Live update: Leader pulling ahead!",
+    "CNN Alert: Tight race continues!",
+    "Election desk: New spike recorded!"
   ];
-
-  ticker.innerText = msgs[Math.floor(Math.random()*msgs.length)];
-}
-
-/* MANUAL */
-function manualRefresh(){
-  loadIdeas();
+  ticker.innerText=msgs[Math.floor(Math.random()*msgs.length)];
 }
 
 </script>
