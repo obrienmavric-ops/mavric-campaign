@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election System V7 Auth</title>
+<title>Election Broadcast CNN V8</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -11,27 +11,59 @@
 body{
   margin:0;
   font-family:Arial;
-  background:#070812;
+  background:#060713;
   color:white;
-  text-align:center;
 }
 
+/* HEADER (CNN STYLE) */
 header{
-  padding:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px;
   background:#111;
   border-bottom:2px solid #a855f7;
 }
 
-button{
-  padding:10px;
-  margin:6px;
-  background:#a855f7;
-  border:none;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
+#live{
+  color:red;
+  font-weight:bold;
+  animation:blink 1s infinite;
+}
+@keyframes blink{
+  50%{opacity:0.3;}
 }
 
+/* TICKER */
+#ticker{
+  background:#a855f7;
+  color:black;
+  padding:6px;
+  font-weight:bold;
+  overflow:hidden;
+}
+
+/* LAYOUT */
+.container{
+  display:grid;
+  grid-template-columns:1fr 1.2fr;
+  height:calc(100vh - 90px);
+}
+
+/* LEFT CONTROL */
+.panel{
+  background:#0b0c18;
+  padding:10px;
+  overflow:auto;
+  border-right:1px solid #222;
+}
+
+/* RIGHT SCREEN */
+.screen{
+  padding:15px;
+}
+
+/* INPUTS */
 input{
   padding:10px;
   width:70%;
@@ -41,18 +73,66 @@ input{
   color:white;
 }
 
-.card{
-  background:#111;
-  margin:10px auto;
+button{
   padding:10px;
-  border-radius:10px;
-  max-width:500px;
-  text-align:left;
+  margin:5px;
+  background:#a855f7;
+  border:none;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
 }
 
-.badge{
-  color:#00ff99;
-  font-size:12px;
+/* CARDS */
+.card{
+  background:#111;
+  margin:10px 0;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #222;
+  transition:0.3s;
+}
+
+.leader{
+  border:1px solid gold;
+  box-shadow:0 0 12px rgba(255,215,0,0.3);
+}
+
+.trending{
+  border:1px solid #00ff99 !important;
+  box-shadow:0 0 12px rgba(0,255,150,0.4);
+  transform:scale(1.02);
+}
+
+/* BAR */
+.bar{
+  height:10px;
+  background:#222;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.fill{
+  height:100%;
+  background:linear-gradient(90deg,#a855f7,gold);
+  width:0%;
+  transition:0.5s ease;
+}
+
+/* GRAPH */
+#graph{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+  height:180px;
+  margin-top:10px;
+}
+
+.barCol{
+  flex:1;
+  background:#a855f7;
+  transition:0.5s;
 }
 </style>
 </head>
@@ -60,161 +140,152 @@ input{
 <body>
 
 <header>
-  🗳️ MAVRIC ELECTION SYSTEM
+  <div>📺 CNN ELECTION LIVE</div>
+  <div id="live">● LIVE</div>
+  <div id="status">STARTING...</div>
 </header>
 
-<div id="status">Starting...</div>
+<div id="ticker">Breaking: Election broadcast initialized</div>
 
-<button onclick="login()">🔐 Login with Google</button>
-<button onclick="logout()">Logout</button>
+<div class="container">
 
-<div id="user">Not logged in</div>
+  <!-- LEFT -->
+  <div class="panel">
+    <h3>🎛 Control Room</h3>
 
-<hr/>
+    <input id="ideaInput" placeholder="Enter idea"/>
+    <button onclick="postIdea()">Post</button>
+    <button onclick="loadIdeas()">Refresh</button>
 
-<h3>💡 Post Idea (Login Required)</h3>
+    <div id="ideas"></div>
+  </div>
 
-<input id="ideaInput" placeholder="Your idea"/>
-<button onclick="postIdea()">Post</button>
+  <!-- RIGHT -->
+  <div class="screen">
 
-<h3>📊 Live Ideas</h3>
-<div id="ideas"></div>
+    <h2>📊 LIVE RESULTS</h2>
+
+    <div id="topIdea">Loading...</div>
+
+    <h3>📈 Vote Momentum</h3>
+    <div id="graph"></div>
+
+  </div>
+
+</div>
 
 <script>
 
 let client = null;
-let currentUser = null;
+let lastVotes = {};
 
 /* INIT */
-window.onload = async () => {
+window.onload = () => {
 
-  client = window.supabase.createClient(
-    "https://didfhlfvdvurkfwbipli.supabase.co",
-    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-  );
+  try {
 
-  document.getElementById("status").innerText = "LIVE";
+    client = window.supabase.createClient(
+      "https://didfhlfvdvurkfwbipli.supabase.co",
+      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+    );
 
-  const { data } = await client.auth.getUser();
-  currentUser = data?.user || null;
+    document.getElementById("status").innerText = "LIVE";
 
-  updateUserUI();
-  loadIdeas();
+    loadIdeas();
 
-  /* realtime updates */
-  client.channel('ideas-live')
-    .on('postgres_changes',
-      { event:'*', schema:'public', table:'ideas' },
-      () => loadIdeas()
-    )
-    .subscribe();
+    /* REALTIME */
+    client.channel('ideas-live')
+      .on('postgres_changes',
+        { event:'*', schema:'public', table:'ideas' },
+        () => loadIdeas()
+      )
+      .subscribe();
+
+  } catch(e){
+    console.error(e);
+    document.getElementById("status").innerText = "ERROR";
+  }
 };
 
-/* AUTH */
-async function login(){
-  await client.auth.signInWithOAuth({
-    provider:"google",
-    options:{
-      redirectTo: window.location.origin
-    }
-  });
-}
-
-async function logout(){
-  await client.auth.signOut();
-  currentUser = null;
-  updateUserUI();
-}
-
-/* USER UI */
-function updateUserUI(){
-  document.getElementById("user").innerText =
-    currentUser
-      ? `Logged in: ${currentUser.email}`
-      : "Not logged in";
-}
-
-/* POST IDEA (LOCKED) */
+/* POST */
 async function postIdea(){
-
-  if(!currentUser){
-    alert("You must login to post");
-    return;
-  }
-
   const text = document.getElementById("ideaInput").value;
-  if(!text) return;
+  if(!text || !client) return;
 
   await client.from("ideas").insert({
     text,
-    votes:0,
-    created_by: currentUser.id
+    votes:0
   });
 
   document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* VOTE (1 PER USER PER IDEA) */
-async function vote(idea_id){
+/* VOTE */
+async function vote(id){
 
-  if(!currentUser){
-    alert("Login required");
-    return;
-  }
-
-  /* check if already voted */
-  const { data: existing } = await client
-    .from("votes")
-    .select("*")
-    .eq("user_id", currentUser.id)
-    .eq("idea_id", idea_id)
-    .single();
-
-  if(existing){
-    alert("You already voted on this idea");
-    return;
-  }
-
-  /* record vote */
-  await client.from("votes").insert({
-    user_id: currentUser.id,
-    idea_id
-  });
-
-  /* increment idea votes */
   const { data } = await client
     .from("ideas")
     .select("votes")
-    .eq("id", idea_id)
+    .eq("id", id)
     .single();
 
   await client
     .from("ideas")
-    .update({ votes: (data.votes || 0) + 1 })
-    .eq("id", idea_id);
+    .update({ votes: (data?.votes || 0) + 1 })
+    .eq("id", id);
 
   loadIdeas();
 }
 
-/* LOAD IDEAS */
+/* RENDER */
 async function loadIdeas(){
 
-  const container = document.getElementById("ideas");
+  const ideasEl = document.getElementById("ideas");
+  const topEl = document.getElementById("topIdea");
+  const graphEl = document.getElementById("graph");
+
+  if(!ideasEl || !topEl) return;
 
   const { data } = await client.from("ideas").select("*");
   if(!data) return;
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
 
-  container.innerHTML = sorted.map(i=>`
-    <div class="card">
-      <div>💡 ${i.text}</div>
-      <div class="badge">🗳️ ${i.votes || 0} votes</div>
+  ideasEl.innerHTML = sorted.map(i=>{
 
-      <button onclick="vote('${i.id}')">Vote</button>
-    </div>
-  `).join("");
+    const percent = ((i.votes||0)/total*100).toFixed(1);
+
+    const prev = lastVotes[i.id] || 0;
+    const spike = (i.votes||0) - prev;
+
+    const trending = spike >= 2;
+
+    lastVotes[i.id] = i.votes || 0;
+
+    return `
+      <div class="card ${trending?"trending":""} ${sorted[0]?.id===i.id?"leader":""}">
+        💡 ${i.text}
+        <div>🗳️ ${i.votes||0}</div>
+
+        <button onclick="vote('${i.id}')">Vote</button>
+
+        <div class="bar">
+          <div class="fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  topEl.innerHTML =
+    "🏆 Leader: <b>" + (sorted[0]?.text || "None") + "</b>";
+
+  /* GRAPH */
+  graphEl.innerHTML = sorted.slice(0,5).map(i=>{
+    const h = ((i.votes||0)/total)*100;
+    return `<div class="barCol" style="height:${h}%"></div>`;
+  }).join("");
 }
 
 </script>
