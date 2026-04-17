@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Platform FINAL FIX</title>
+<title>Mavric Platform</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
@@ -41,9 +43,10 @@ input{
 
 .card{
   background:#111;
-  margin:10px;
+  margin:10px auto;
   padding:10px;
   border-radius:10px;
+  max-width:500px;
 }
 
 .star{
@@ -77,25 +80,15 @@ input{
 <div class="star" id="star">⭐</div>
 <div id="score">0</div>
 
-<!-- LOAD SUPABASE FIRST -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-
-/* =========================
-   SAFE START (NO DUPES)
-========================= */
 console.log("APP STARTED");
-document.getElementById("status").innerText = "JS Loaded";
 
 let client = null;
 let user = null;
 let running = false;
 let score = 0;
 
-/* =========================
-   BUTTONS (ALWAYS WORK)
-========================= */
+/* BUTTONS ALWAYS WORK */
 document.getElementById("loginBtn").onclick = () => {
   alert("Login clicked");
 
@@ -145,25 +138,21 @@ document.getElementById("star").onclick = () => {
   document.getElementById("score").innerText = score;
 };
 
-/* =========================
-   SUPABASE INIT (SAFE)
-========================= */
-function init(){
+/* INIT SUPABASE */
+window.onload = () => {
 
   if(!window.supabase){
-    document.getElementById("status").innerText =
-      "Supabase failed to load";
+    document.getElementById("status").innerText = "Supabase failed to load";
     return;
   }
 
   try{
     client = window.supabase.createClient(
-      "PASTE_SUPABASE_URL",
-      "PASTE_SUPABASE_ANON_KEY"
+      "https://didfhlfvdvurkfwbipli.supabase.co",
+      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
     );
 
-    document.getElementById("status").innerText =
-      "Connected";
+    document.getElementById("status").innerText = "Connected";
 
     client.auth.onAuthStateChange((_,session)=>{
       user = session?.user || null;
@@ -173,34 +162,27 @@ function init(){
 
     loadIdeas();
 
-  }catch(e){
+  } catch(e){
     console.error(e);
-    document.getElementById("status").innerText =
-      "Supabase error";
+    document.getElementById("status").innerText = "Supabase error";
   }
-}
+};
 
-/* =========================
-   IDEAS
-========================= */
+/* LOAD IDEAS */
 async function loadIdeas(){
 
   if(!client) return;
 
   const {data} = await client.from("ideas").select("*");
-  if(!data) return;
 
   document.getElementById("ideas").innerHTML =
-    data.map(i=>`
+    (data || []).map(i=>`
       <div class="card">
         💡 ${i.text}
         <div>🗳️ ${i.votes||0}</div>
       </div>
     `).join("");
 }
-
-/* START */
-window.onload = init;
 
 </script>
 
