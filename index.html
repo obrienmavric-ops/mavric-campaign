@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CNN Election V13 Stable</title>
+<title>CNN Election V14 Locked</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -71,10 +71,10 @@ button{
   border:1px solid #222;
 }
 
-/* ✅ FIXED IMAGE SYSTEM (NO STRETCH EVER) */
+/* CNN IMAGE FIX (NO STRETCH EVER) */
 .imgBox{
   width:100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio:16/9;
   overflow:hidden;
   border-radius:10px;
   margin-top:10px;
@@ -99,7 +99,7 @@ button{
 <body>
 
 <header>
-  <div>📺 CNN ELECTION V13</div>
+  <div>📺 CNN ELECTION V14</div>
   <div id="status">STARTING...</div>
 </header>
 
@@ -111,7 +111,7 @@ button{
 
 <div class="container">
 
-  <!-- LEFT -->
+  <!-- LEFT PANEL -->
   <div class="panel">
 
     <h3>💡 Ideas</h3>
@@ -123,7 +123,7 @@ button{
 
   </div>
 
-  <!-- RIGHT -->
+  <!-- RIGHT PANEL -->
   <div class="screen">
 
     <h3>🏆 Leader</h3>
@@ -144,6 +144,9 @@ button{
 
 let client;
 let user = null;
+
+/* YOUR OWNER ID (LOCK) */
+const OWNER_ID = "18d43a56-6376-458e-9301-add699803f40";
 
 /* INIT */
 window.onload = async () => {
@@ -203,7 +206,7 @@ async function postIdea(){
   loadIdeas();
 }
 
-/* VOTE (SAFE + NO DUPLICATES) */
+/* VOTE (ONE PER USER PER IDEA) */
 async function vote(id){
 
   if(!user){
@@ -236,7 +239,7 @@ async function vote(id){
 
   await client
     .from("ideas")
-    .update({ votes:(data?.votes||0)+1 })
+    .update({ votes:(data.votes||0)+1 })
     .eq("id", id);
 
   loadIdeas();
@@ -263,11 +266,16 @@ async function loadIdeas(){
     sorted[0] ? `🏆 ${sorted[0].text}` : "None";
 }
 
-/* IMAGE UPLOAD */
+/* IMAGE UPLOAD (OWNER ONLY) */
 async function uploadImage(){
 
   if(!user){
     alert("Login required");
+    return;
+  }
+
+  if(user.id !== OWNER_ID){
+    alert("Only Mavric can upload images");
     return;
   }
 
