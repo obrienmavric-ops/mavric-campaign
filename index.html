@@ -1,118 +1,38 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Mavric Election Fixed UI</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0b0b12;
-  color:white;
-  text-align:center;
-}
-
-header{
-  padding:12px;
-  background:#111;
-  color:#a855f7;
-}
-
-button{
-  padding:10px;
-  margin:6px;
-  background:#a855f7;
-  border:none;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-}
-
-.card{
-  background:#111;
-  margin:10px auto;
-  padding:10px;
-  border-radius:10px;
-  max-width:500px;
-}
-</style>
-</head>
-
 <body>
 
-<header>🗳️ MAVRIC ELECTION FIX</header>
+<h1>BUTTON TEST</h1>
 
-<!-- 🔥 THIS IS THE MISSING PART MOST LIKELY -->
-<div>
-  <input id="ideaInput" placeholder="Enter idea"/>
-  <button onclick="postIdea()">Post Idea</button>
-</div>
+<button onclick="test()">CLICK ME</button>
 
-<button onclick="loadIdeas()">Refresh</button>
-
-<h3>Ideas</h3>
 <div id="ideas"></div>
 
 <script>
 
-let client;
+console.log("SCRIPT LOADED");
 
-window.onload=()=>{
+function test(){
+  alert("BUTTON WORKS");
+}
 
-  client = window.supabase.createClient(
-    "https://didfhlfvdvurkfwbipli.supabase.co",
-    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-  );
+/* FORCE CHECK DOM */
+window.onload = () => {
+  console.log("PAGE LOADED");
 
-  loadIdeas();
+  const el = document.getElementById("ideas");
+
+  if(!el){
+    alert("ERROR: ideas div missing");
+    return;
+  }
+
+  el.innerHTML = `
+    <button onclick="alert('DYNAMIC BUTTON WORKS')">
+      DYNAMIC BUTTON
+    </button>
+  `;
 };
-
-async function postIdea(){
-
-  const text = document.getElementById("ideaInput").value;
-  if(!text) return;
-
-  await client.from("ideas").insert({text,votes:0});
-  document.getElementById("ideaInput").value="";
-
-  loadIdeas();
-}
-
-async function loadIdeas(){
-
-  const {data} = await client.from("ideas").select("*");
-  if(!data) return;
-
-  ideas.innerHTML = data.map(i=>`
-    <div class="card">
-      💡 ${i.text}
-      <div>🗳️ ${i.votes||0}</div>
-
-      <!-- THIS IS THE BUTTON YOU SAID WAS MISSING -->
-      <button onclick="vote('${i.id}')">Vote</button>
-    </div>
-  `).join("");
-}
-
-async function vote(id){
-
-  const {data} = await client
-    .from("ideas")
-    .select("votes")
-    .eq("id",id)
-    .single();
-
-  await client
-    .from("ideas")
-    .update({votes:(data.votes||0)+1})
-    .eq("id",id);
-
-  loadIdeas();
-}
 
 </script>
 
