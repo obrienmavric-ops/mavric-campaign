@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Broadcast CNN V8</title>
+<title>CNN Election V8 + Auth</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -15,11 +15,9 @@ body{
   color:white;
 }
 
-/* HEADER (CNN STYLE) */
 header{
   display:flex;
   justify-content:space-between;
-  align-items:center;
   padding:10px;
   background:#111;
   border-bottom:2px solid #a855f7;
@@ -27,43 +25,34 @@ header{
 
 #live{
   color:red;
-  font-weight:bold;
   animation:blink 1s infinite;
+  font-weight:bold;
 }
-@keyframes blink{
-  50%{opacity:0.3;}
-}
+@keyframes blink{50%{opacity:0.3;}}
 
-/* TICKER */
 #ticker{
   background:#a855f7;
   color:black;
   padding:6px;
-  font-weight:bold;
-  overflow:hidden;
 }
 
-/* LAYOUT */
 .container{
   display:grid;
   grid-template-columns:1fr 1.2fr;
-  height:calc(100vh - 90px);
+  height:calc(100vh - 110px);
 }
 
-/* LEFT CONTROL */
 .panel{
-  background:#0b0c18;
   padding:10px;
+  background:#0b0c18;
   overflow:auto;
   border-right:1px solid #222;
 }
 
-/* RIGHT SCREEN */
 .screen{
   padding:15px;
 }
 
-/* INPUTS */
 input{
   padding:10px;
   width:70%;
@@ -83,25 +72,20 @@ button{
   cursor:pointer;
 }
 
-/* CARDS */
 .card{
   background:#111;
   margin:10px 0;
   padding:10px;
   border-radius:10px;
   border:1px solid #222;
-  transition:0.3s;
 }
 
 .leader{
   border:1px solid gold;
-  box-shadow:0 0 12px rgba(255,215,0,0.3);
 }
 
 .trending{
   border:1px solid #00ff99 !important;
-  box-shadow:0 0 12px rgba(0,255,150,0.4);
-  transform:scale(1.02);
 }
 
 /* BAR */
@@ -116,22 +100,6 @@ button{
 .fill{
   height:100%;
   background:linear-gradient(90deg,#a855f7,gold);
-  width:0%;
-  transition:0.5s ease;
-}
-
-/* GRAPH */
-#graph{
-  display:flex;
-  align-items:flex-end;
-  gap:8px;
-  height:180px;
-  margin-top:10px;
-}
-
-.barCol{
-  flex:1;
-  background:#a855f7;
   transition:0.5s;
 }
 </style>
@@ -145,16 +113,25 @@ button{
   <div id="status">STARTING...</div>
 </header>
 
-<div id="ticker">Breaking: Election broadcast initialized</div>
+<div id="ticker">Breaking: Election broadcast online</div>
+
+<!-- AUTH PANEL -->
+<div style="padding:10px; background:#0b0c18;">
+  <button onclick="login()">🔐 Login with Google</button>
+  <button onclick="logout()">Logout</button>
+  <div id="user">Not logged in</div>
+</div>
 
 <div class="container">
 
   <!-- LEFT -->
   <div class="panel">
+
     <h3>🎛 Control Room</h3>
 
     <input id="ideaInput" placeholder="Enter idea"/>
-    <button onclick="postIdea()">Post</button>
+    <button onclick="postIdea()">Post Idea</button>
+
     <button onclick="loadIdeas()">Refresh</button>
 
     <div id="ideas"></div>
@@ -166,8 +143,6 @@ button{
     <h2>📊 LIVE RESULTS</h2>
 
     <div id="topIdea">Loading...</div>
-
-    <h3>📈 Vote Momentum</h3>
     <div id="graph"></div>
 
   </div>
@@ -177,52 +152,99 @@ button{
 <script>
 
 let client = null;
+let currentUser = null;
 let lastVotes = {};
 
 /* INIT */
-window.onload = () => {
+window.onload = async () => {
 
-  try {
+  client = window.supabase.createClient(
+    "https://didfhlfvdvurkfwbipli.supabase.co",
+    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+  );
 
-    client = window.supabase.createClient(
-      "https://didfhlfvdvurkfwbipli.supabase.co",
-      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-    );
+  const { data } = await client.auth.getUser();
+  currentUser = data?.user || null;
 
-    document.getElementById("status").innerText = "LIVE";
+  updateUser();
+  document.getElementById("status").innerText = "LIVE";
 
-    loadIdeas();
+  loadIdeas();
 
-    /* REALTIME */
-    client.channel('ideas-live')
-      .on('postgres_changes',
-        { event:'*', schema:'public', table:'ideas' },
-        () => loadIdeas()
-      )
-      .subscribe();
-
-  } catch(e){
-    console.error(e);
-    document.getElementById("status").innerText = "ERROR";
-  }
+  client.channel('ideas-live')
+    .on('postgres_changes',
+      { event:'*', schema:'public', table:'ideas' },
+      () => loadIdeas()
+    )
+    .subscribe();
 };
 
-/* POST */
+/* AUTH */
+async function login(){
+  await client.auth.signInWithOAuth({
+    provider:"google",
+    options:{
+      redirectTo: window.location.origin
+    }
+  });
+}
+
+async function logout(){
+  await client.auth.signOut();
+  currentUser = null;
+  updateUser();
+}
+
+function updateUser(){
+  document.getElementById("user").innerText =
+    currentUser ? `Logged in: ${currentUser.email}` : "Not logged in";
+}
+
+/* POST IDEA (LOCKED) */
 async function postIdea(){
+
+  if(!currentUser){
+    alert("Login required");
+    return;
+  }
+
   const text = document.getElementById("ideaInput").value;
-  if(!text || !client) return;
+  if(!text) return;
 
   await client.from("ideas").insert({
     text,
-    votes:0
+    votes:0,
+    created_by: currentUser.id
   });
 
   document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* VOTE */
+/* VOTE (LOCKED + ONE PER USER) */
 async function vote(id){
+
+  if(!currentUser){
+    alert("Login required");
+    return;
+  }
+
+  const { data: existing } = await client
+    .from("votes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .eq("idea_id", id)
+    .single();
+
+  if(existing){
+    alert("Already voted on this idea");
+    return;
+  }
+
+  await client.from("votes").insert({
+    user_id: currentUser.id,
+    idea_id: id
+  });
 
   const { data } = await client
     .from("ideas")
@@ -232,33 +254,31 @@ async function vote(id){
 
   await client
     .from("ideas")
-    .update({ votes: (data?.votes || 0) + 1 })
+    .update({ votes:(data?.votes||0)+1 })
     .eq("id", id);
 
   loadIdeas();
 }
 
-/* RENDER */
+/* LOAD */
 async function loadIdeas(){
 
   const ideasEl = document.getElementById("ideas");
   const topEl = document.getElementById("topIdea");
   const graphEl = document.getElementById("graph");
 
-  if(!ideasEl || !topEl) return;
-
   const { data } = await client.from("ideas").select("*");
   if(!data) return;
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
+  const total = sorted.reduce((a,b)=>a+(b.votes||0),0)||1;
 
   ideasEl.innerHTML = sorted.map(i=>{
 
     const percent = ((i.votes||0)/total*100).toFixed(1);
 
     const prev = lastVotes[i.id] || 0;
-    const spike = (i.votes||0) - prev;
+    const spike = (i.votes||0)-prev;
 
     const trending = spike >= 2;
 
@@ -281,10 +301,9 @@ async function loadIdeas(){
   topEl.innerHTML =
     "🏆 Leader: <b>" + (sorted[0]?.text || "None") + "</b>";
 
-  /* GRAPH */
   graphEl.innerHTML = sorted.slice(0,5).map(i=>{
     const h = ((i.votes||0)/total)*100;
-    return `<div class="barCol" style="height:${h}%"></div>`;
+    return `<div style="height:${h}%; width:20%; background:#a855f7;"></div>`;
   }).join("");
 }
 
