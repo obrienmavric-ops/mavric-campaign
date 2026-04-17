@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Election Broadcast V5 Stable</title>
+<title>Election System V7 Auth</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -13,44 +13,23 @@ body{
   font-family:Arial;
   background:#070812;
   color:white;
+  text-align:center;
 }
 
 header{
-  display:flex;
-  justify-content:space-between;
-  padding:10px;
+  padding:12px;
   background:#111;
   border-bottom:2px solid #a855f7;
 }
 
-#live{
-  color:red;
-  font-weight:bold;
-  animation:blink 1s infinite;
-}
-@keyframes blink{50%{opacity:0.4;}}
-
-#ticker{
+button{
+  padding:10px;
+  margin:6px;
   background:#a855f7;
-  color:black;
-  padding:6px;
-}
-
-.container{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  height:calc(100vh - 90px);
-}
-
-.panel{
-  padding:10px;
-  overflow:auto;
-  background:#0c0c14;
-  border-right:1px solid #222;
-}
-
-.screen{
-  padding:10px;
+  border:none;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
 }
 
 input{
@@ -62,47 +41,18 @@ input{
   color:white;
 }
 
-button{
-  padding:10px;
-  margin:5px;
-  background:#a855f7;
-  border:none;
-  border-radius:8px;
-  color:white;
-  cursor:pointer;
-}
-
 .card{
   background:#111;
-  margin:8px 0;
+  margin:10px auto;
   padding:10px;
   border-radius:10px;
-  border:1px solid #222;
+  max-width:500px;
+  text-align:left;
 }
 
-.leader{
-  border:1px solid gold;
-  box-shadow:0 0 10px rgba(255,215,0,0.3);
-}
-
-.trending{
-  border:1px solid #00ff99 !important;
-  box-shadow:0 0 10px rgba(0,255,150,0.3);
-}
-
-.bar{
-  height:10px;
-  background:#222;
-  border-radius:10px;
-  overflow:hidden;
-  margin-top:6px;
-}
-
-.fill{
-  height:100%;
-  background:linear-gradient(90deg,#a855f7,gold);
-  width:0%;
-  transition:0.4s;
+.badge{
+  color:#00ff99;
+  font-size:12px;
 }
 </style>
 </head>
@@ -110,148 +60,161 @@ button{
 <body>
 
 <header>
-  <div>📺 ELECTION BROADCAST</div>
-  <div id="live">● LIVE</div>
-  <div id="status">Starting...</div>
+  🗳️ MAVRIC ELECTION SYSTEM
 </header>
 
-<div id="ticker">Live election coverage active...</div>
+<div id="status">Starting...</div>
 
-<div class="container">
+<button onclick="login()">🔐 Login with Google</button>
+<button onclick="logout()">Logout</button>
 
-  <!-- LEFT -->
-  <div class="panel">
-    <h3>💡 Ideas</h3>
+<div id="user">Not logged in</div>
 
-    <input id="ideaInput" placeholder="Enter idea"/>
-    <button onclick="postIdea()">Post</button>
+<hr/>
 
-    <button onclick="loadIdeas()">Refresh</button>
+<h3>💡 Post Idea (Login Required)</h3>
 
-    <div id="ideas"></div>
-  </div>
+<input id="ideaInput" placeholder="Your idea"/>
+<button onclick="postIdea()">Post</button>
 
-  <!-- RIGHT -->
-  <div class="screen">
-    <h2>📊 Live Results</h2>
-    <div id="topIdea">Loading...</div>
-  </div>
-
-</div>
+<h3>📊 Live Ideas</h3>
+<div id="ideas"></div>
 
 <script>
 
 let client = null;
-let lastVotes = {};
+let currentUser = null;
 
-/* SAFE INIT */
-window.onload = () => {
+/* INIT */
+window.onload = async () => {
 
-  try {
+  client = window.supabase.createClient(
+    "https://didfhlfvdvurkfwbipli.supabase.co",
+    "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+  );
 
-    client = window.supabase.createClient(
-      "https://didfhlfvdvurkfwbipli.supabase.co",
-      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
-    );
+  document.getElementById("status").innerText = "LIVE";
 
-    document.getElementById("status").innerText = "LIVE";
+  const { data } = await client.auth.getUser();
+  currentUser = data?.user || null;
 
-    loadIdeas();
+  updateUserUI();
+  loadIdeas();
 
-    /* REALTIME SAFE */
-    client.channel('ideas-live')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'ideas' },
-        () => loadIdeas()
-      )
-      .subscribe();
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById("status").innerText = "ERROR";
-  }
+  /* realtime updates */
+  client.channel('ideas-live')
+    .on('postgres_changes',
+      { event:'*', schema:'public', table:'ideas' },
+      () => loadIdeas()
+    )
+    .subscribe();
 };
 
-/* POST */
+/* AUTH */
+async function login(){
+  await client.auth.signInWithOAuth({
+    provider:"google",
+    options:{
+      redirectTo: window.location.origin
+    }
+  });
+}
+
+async function logout(){
+  await client.auth.signOut();
+  currentUser = null;
+  updateUserUI();
+}
+
+/* USER UI */
+function updateUserUI(){
+  document.getElementById("user").innerText =
+    currentUser
+      ? `Logged in: ${currentUser.email}`
+      : "Not logged in";
+}
+
+/* POST IDEA (LOCKED) */
 async function postIdea(){
 
-  const input = document.getElementById("ideaInput");
-  if(!input) return;
+  if(!currentUser){
+    alert("You must login to post");
+    return;
+  }
 
-  const text = input.value;
-  if(!text || !client) return;
+  const text = document.getElementById("ideaInput").value;
+  if(!text) return;
 
-  await client.from("ideas").insert({ text, votes: 0 });
+  await client.from("ideas").insert({
+    text,
+    votes:0,
+    created_by: currentUser.id
+  });
 
-  input.value = "";
+  document.getElementById("ideaInput").value="";
   loadIdeas();
 }
 
-/* VOTE */
-async function vote(id){
+/* VOTE (1 PER USER PER IDEA) */
+async function vote(idea_id){
 
-  if(!client) return;
+  if(!currentUser){
+    alert("Login required");
+    return;
+  }
 
+  /* check if already voted */
+  const { data: existing } = await client
+    .from("votes")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .eq("idea_id", idea_id)
+    .single();
+
+  if(existing){
+    alert("You already voted on this idea");
+    return;
+  }
+
+  /* record vote */
+  await client.from("votes").insert({
+    user_id: currentUser.id,
+    idea_id
+  });
+
+  /* increment idea votes */
   const { data } = await client
     .from("ideas")
     .select("votes")
-    .eq("id", id)
+    .eq("id", idea_id)
     .single();
 
   await client
     .from("ideas")
-    .update({ votes: (data?.votes || 0) + 1 })
-    .eq("id", id);
+    .update({ votes: (data.votes || 0) + 1 })
+    .eq("id", idea_id);
 
   loadIdeas();
 }
 
-/* RENDER */
+/* LOAD IDEAS */
 async function loadIdeas(){
 
-  const ideasEl = document.getElementById("ideas");
-  const topEl = document.getElementById("topIdea");
+  const container = document.getElementById("ideas");
 
-  if(!ideasEl || !topEl || !client) return;
-
-  const { data, error } = await client.from("ideas").select("*");
-
-  if(error || !data){
-    ideasEl.innerHTML = "Loading error...";
-    return;
-  }
+  const { data } = await client.from("ideas").select("*");
+  if(!data) return;
 
   const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
-  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
 
-  ideasEl.innerHTML = sorted.map((i,index)=>{
+  container.innerHTML = sorted.map(i=>`
+    <div class="card">
+      <div>💡 ${i.text}</div>
+      <div class="badge">🗳️ ${i.votes || 0} votes</div>
 
-    const percent = ((i.votes||0)/total*100).toFixed(1);
-
-    const prev = lastVotes[i.id] || 0;
-    const spike = (i.votes||0) - prev;
-
-    const trending = spike >= 2;
-
-    lastVotes[i.id] = i.votes || 0;
-
-    return `
-      <div class="card ${index===0?"leader":""} ${trending?"trending":""}">
-        <b>#${index+1}</b> 💡 ${i.text}
-        <div>🗳️ ${i.votes||0}</div>
-
-        <button onclick="vote('${i.id}')">Vote</button>
-
-        <div class="bar">
-          <div class="fill" style="width:${percent}%"></div>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  topEl.innerHTML = `
-    🏆 Leader: <b>${sorted[0]?.text || "None"}</b>
-  `;
+      <button onclick="vote('${i.id}')">Vote</button>
+    </div>
+  `).join("");
 }
 
 </script>
