@@ -1,38 +1,258 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Election Broadcast V5 Stable</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#070812;
+  color:white;
+}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  padding:10px;
+  background:#111;
+  border-bottom:2px solid #a855f7;
+}
+
+#live{
+  color:red;
+  font-weight:bold;
+  animation:blink 1s infinite;
+}
+@keyframes blink{50%{opacity:0.4;}}
+
+#ticker{
+  background:#a855f7;
+  color:black;
+  padding:6px;
+}
+
+.container{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  height:calc(100vh - 90px);
+}
+
+.panel{
+  padding:10px;
+  overflow:auto;
+  background:#0c0c14;
+  border-right:1px solid #222;
+}
+
+.screen{
+  padding:10px;
+}
+
+input{
+  padding:10px;
+  width:70%;
+  border-radius:8px;
+  border:none;
+  background:#1a1a1a;
+  color:white;
+}
+
+button{
+  padding:10px;
+  margin:5px;
+  background:#a855f7;
+  border:none;
+  border-radius:8px;
+  color:white;
+  cursor:pointer;
+}
+
+.card{
+  background:#111;
+  margin:8px 0;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #222;
+}
+
+.leader{
+  border:1px solid gold;
+  box-shadow:0 0 10px rgba(255,215,0,0.3);
+}
+
+.trending{
+  border:1px solid #00ff99 !important;
+  box-shadow:0 0 10px rgba(0,255,150,0.3);
+}
+
+.bar{
+  height:10px;
+  background:#222;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:6px;
+}
+
+.fill{
+  height:100%;
+  background:linear-gradient(90deg,#a855f7,gold);
+  width:0%;
+  transition:0.4s;
+}
+</style>
+</head>
+
 <body>
 
-<h1>BUTTON TEST</h1>
+<header>
+  <div>📺 ELECTION BROADCAST</div>
+  <div id="live">● LIVE</div>
+  <div id="status">Starting...</div>
+</header>
 
-<button onclick="test()">CLICK ME</button>
+<div id="ticker">Live election coverage active...</div>
 
-<div id="ideas"></div>
+<div class="container">
+
+  <!-- LEFT -->
+  <div class="panel">
+    <h3>💡 Ideas</h3>
+
+    <input id="ideaInput" placeholder="Enter idea"/>
+    <button onclick="postIdea()">Post</button>
+
+    <button onclick="loadIdeas()">Refresh</button>
+
+    <div id="ideas"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="screen">
+    <h2>📊 Live Results</h2>
+    <div id="topIdea">Loading...</div>
+  </div>
+
+</div>
 
 <script>
 
-console.log("SCRIPT LOADED");
+let client = null;
+let lastVotes = {};
 
-function test(){
-  alert("BUTTON WORKS");
+/* SAFE INIT */
+window.onload = () => {
+
+  try {
+
+    client = window.supabase.createClient(
+      "https://didfhlfvdvurkfwbipli.supabase.co",
+      "sb_publishable_H6LVD2AlVaJ6SvHToXorgw_4ozq4FT0"
+    );
+
+    document.getElementById("status").innerText = "LIVE";
+
+    loadIdeas();
+
+    /* REALTIME SAFE */
+    client.channel('ideas-live')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'ideas' },
+        () => loadIdeas()
+      )
+      .subscribe();
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("status").innerText = "ERROR";
+  }
+};
+
+/* POST */
+async function postIdea(){
+
+  const input = document.getElementById("ideaInput");
+  if(!input) return;
+
+  const text = input.value;
+  if(!text || !client) return;
+
+  await client.from("ideas").insert({ text, votes: 0 });
+
+  input.value = "";
+  loadIdeas();
 }
 
-/* FORCE CHECK DOM */
-window.onload = () => {
-  console.log("PAGE LOADED");
+/* VOTE */
+async function vote(id){
 
-  const el = document.getElementById("ideas");
+  if(!client) return;
 
-  if(!el){
-    alert("ERROR: ideas div missing");
+  const { data } = await client
+    .from("ideas")
+    .select("votes")
+    .eq("id", id)
+    .single();
+
+  await client
+    .from("ideas")
+    .update({ votes: (data?.votes || 0) + 1 })
+    .eq("id", id);
+
+  loadIdeas();
+}
+
+/* RENDER */
+async function loadIdeas(){
+
+  const ideasEl = document.getElementById("ideas");
+  const topEl = document.getElementById("topIdea");
+
+  if(!ideasEl || !topEl || !client) return;
+
+  const { data, error } = await client.from("ideas").select("*");
+
+  if(error || !data){
+    ideasEl.innerHTML = "Loading error...";
     return;
   }
 
-  el.innerHTML = `
-    <button onclick="alert('DYNAMIC BUTTON WORKS')">
-      DYNAMIC BUTTON
-    </button>
+  const sorted = data.sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const total = sorted.reduce((a,b)=>a+(b.votes||0),0) || 1;
+
+  ideasEl.innerHTML = sorted.map((i,index)=>{
+
+    const percent = ((i.votes||0)/total*100).toFixed(1);
+
+    const prev = lastVotes[i.id] || 0;
+    const spike = (i.votes||0) - prev;
+
+    const trending = spike >= 2;
+
+    lastVotes[i.id] = i.votes || 0;
+
+    return `
+      <div class="card ${index===0?"leader":""} ${trending?"trending":""}">
+        <b>#${index+1}</b> 💡 ${i.text}
+        <div>🗳️ ${i.votes||0}</div>
+
+        <button onclick="vote('${i.id}')">Vote</button>
+
+        <div class="bar">
+          <div class="fill" style="width:${percent}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  topEl.innerHTML = `
+    🏆 Leader: <b>${sorted[0]?.text || "None"}</b>
   `;
-};
+}
 
 </script>
 
